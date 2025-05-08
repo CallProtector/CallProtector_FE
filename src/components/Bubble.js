@@ -4,13 +4,13 @@ import styled, { keyframes, css } from "styled-components";
 
 const float = keyframes`
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-10px); }
 `;
 
 const StyledBubble = styled.div`
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #7B4BC4, #3E1877);
+  background: radial-gradient(circle at 30% 30%, #8B5CF6, #3E1877);
   z-index: 2;
   opacity: 0.9;
   width: ${({ size }) => size || '20px'};
