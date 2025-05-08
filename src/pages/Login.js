@@ -1,16 +1,18 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import PurpleWave from '../components/PurpleWave';
+import Bubble from '../components/Bubble';
 
 const Container = styled.div`
   display: flex;
   min-height: 100vh;
-//   align-items: stretch;
   font-family: 'Arial', sans-serif;
 `;
 
 // 왼쪽 패널
 const LeftPanel = styled.div`
+  position: relative; 
   width: 50%;
   background: #F3F6FE;
   color: black;
@@ -18,18 +20,28 @@ const LeftPanel = styled.div`
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  padding: 3rem;
+  padding: 50px 48px 0px 48px;
+  overflow: hidden; 
 `;
 
 const LeftText = styled.div`
   text-align: center;
   line-height: 2;
-  font-size: 1.25rem;
+  font-size: 35px;
+  font-weight: bold;
+  margin-top: 100px;
+`;
+
+const LeftSubtext = styled.div`
+  text-align: center;
+  line-height: 2;
+  font-size: 25px;
+  margin-top: 10px;
 `;
 
 const Brand = styled.h1`
-  margin-top: 2rem;
-  font-size: 2rem;
+  // margin-top: 32px;
+  font-size: 32px;
   font-weight: bold;
 `;
 
@@ -39,7 +51,7 @@ const Divider = styled.div`
 `;
 
 const TitleWrapper = styled.div`
-  margin-bottom: 1.5rem;
+  margin-bottom: 24px;
   text-align: center;
 `;
 
@@ -47,7 +59,7 @@ const RightPanel = styled.div`
   width: 50%;
   background: #F3F6FE;
   display: flex;
-  flex-direction: column; /* 세로 방향으로 정렬 */
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 `;
@@ -57,21 +69,22 @@ const LoginBox = styled.div`
   border-radius: 15px;
   justify-content: center;
   align-items: center;
-  padding: 7rem;
-  width: 40%;
-//   max-width: 400px;
+  padding: 45px;
+  width: 60%;
+  height: 55%;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 `;
 
 const Title = styled.h2`
   text-align: center;
   color: #5C24AF;
-  margin-bottom: 1rem;
+  margin-bottom: 26px;
+  font-size: 38px;
 `;
 
 const SubText = styled.p`
   text-align: left;
-  margin-bottom: 4rem;
+  margin-bottom: 60px;
   font-weight: bold;
   font-size: 30px;
 `;
@@ -79,12 +92,11 @@ const SubText = styled.p`
 const Input = styled.input`
   width: 100%;
   padding: 15px;
-  margin-bottom: 1rem;
-  align-items: center;
+  margin-bottom: 16px;
   border: 1px solid #d1d5db;
   border-radius: 5px;
-  font-size: 1rem;
-
+  font-size: 16px;
+  box-sizing: border-box;
   &:focus {
     outline: none;
     border-color: #5C24AF;
@@ -95,17 +107,17 @@ const CheckboxWrapper = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 16px;
 `;
 
 const CheckboxLabel = styled.label`
-  font-size: 0.9rem;
+  font-size: 14px;
   display: flex;
   align-items: center;
 `;
 
 const RightText = styled.a`
-  font-size: 0.8rem;
+  font-size: 13px;
   color: #6b7280;
   text-decoration: none;
 `;
@@ -119,8 +131,9 @@ const Button = styled.button`
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-bottom: 1rem;
-
+  margin-bottom: 16px;
+  font-size: 16px;
+  box-sizing: border-box;
   &:hover {
     background-color: #5C24AF;
   }
@@ -128,50 +141,54 @@ const Button = styled.button`
 
 const BottomText = styled.div`
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 14px;
 `;
 
 const Login = () => {
-    return (
-        <Container>
-            <LeftPanel>
-                <LeftText>
-                    당신이 먼저 존중받는 상담,<br />
-                    마음이 덜 다치는 상담,<br />
-                    작은 안심이 되는 상담
-                    <br />
-                    <br />
-                    지금 바로 함께해보세요.
-                </LeftText>
-                <Brand>온음</Brand>
-            </LeftPanel>
-            <Divider />
-            <RightPanel>
-                <TitleWrapper>
-                    <Title>로그인</Title>
-                </TitleWrapper>
-                <LoginBox>
-
-                    <SubText>당신의 상담을 온음이 지켜드립니다<br />로그인 후 시작하세요!</SubText>
-                    <form>
-                        <Input type="email" placeholder="이메일을 입력해주세요" />
-                        <Input type="password" placeholder="비밀번호를 입력해주세요" />
-                        <CheckboxWrapper>
-                            <CheckboxLabel>
-                                <input type="checkbox" style={{ marginRight: '8px' }} />
-                                자동 로그인
-                            </CheckboxLabel>
-                            <RightText href="/recover">아이디 | 비밀번호 찾기</RightText>
-                        </CheckboxWrapper>
-                        <Button>로그인</Button>
-                        <BottomText>
-                            아직 계정이 없으신가요? <Link to="/signin" style={{ color: '#6d28d9' }}>회원가입</Link>
-                        </BottomText>
-                    </form>
-                </LoginBox>
-            </RightPanel>
-        </Container>
-    );
+  return (
+    <Container>
+      <LeftPanel>
+        <PurpleWave />
+        <Bubble size="27px" top="170px" right="80px" floating/>
+        <Bubble size="38px" top="210px" right="30px" floating/> 
+        <LeftText>
+          당신이 먼저 존중받는 상담,<br />
+          마음이 덜 다치는 상담,<br />
+          작은 안심이 되는 상담<br />
+          .<br />
+          .
+        </LeftText>
+        <LeftSubtext>
+          지금 바로 함께해보세요.
+        </LeftSubtext>
+        <Brand>온음</Brand>
+      </LeftPanel>
+      <Divider />
+      <RightPanel>
+        <TitleWrapper>
+          <Title>로그인</Title>
+        </TitleWrapper>
+        <LoginBox>
+          <SubText>당신의 상담을 온음이 지켜드립니다<br />로그인 후 시작하세요!</SubText>
+          <form>
+            <Input type="email" placeholder="이메일을 입력해주세요" />
+            <Input type="password" placeholder="비밀번호를 입력해주세요" />
+            <CheckboxWrapper>
+              <CheckboxLabel>
+                <input type="checkbox" style={{ marginRight: '8px' }} />
+                자동 로그인
+              </CheckboxLabel>
+              <RightText href="/recover">아이디 | 비밀번호 찾기</RightText>
+            </CheckboxWrapper>
+            <Button>로그인</Button>
+            <BottomText>
+              아직 계정이 없으신가요? <Link to="/signin" style={{ color: '#6d28d9' }}>회원가입</Link>
+            </BottomText>
+          </form>
+        </LoginBox>
+      </RightPanel>
+    </Container>
+  );
 };
 
 export default Login;
