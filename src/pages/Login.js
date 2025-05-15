@@ -194,7 +194,7 @@ const Login = () => {
             </CheckboxWrapper>
             <Button>로그인</Button>
             <BottomText>
-              아직 계정이 없으신가요? <Link to="/signin" style={{ color: '#5C24AF' }}>회원가입</Link>
+              아직 계정이 없으신가요? <Link to="/signup" style={{ color: '#5C24AF' }}>회원가입</Link>
             </BottomText>
           </form>
         </LoginBox>
