@@ -4,7 +4,7 @@ import GlobalStyle from './styles/GlobalStyle';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';
-import Signin from './pages/Signin';
+import Signup from './pages/Signup';
 import Main from './pages/Main';
 import Calling from './pages/Calling';
 import CallList from './pages/CallList';
@@ -18,7 +18,7 @@ class AppRouter extends React.Component {
        <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signin" element={<Signin />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/main" element={<Main />} />
         <Route path="/calling" element={<Calling />} />
         <Route path="/callList" element={<CallList />} />
