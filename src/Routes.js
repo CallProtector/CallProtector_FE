@@ -6,7 +6,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Main from './pages/Main';
-import Calling from './pages/Calling';
+import CallLog from './pages/callLogPage/CallLog';
 import CallList from './pages/CallList';
 import Chatbot from './pages/Chatbot';
 
@@ -20,7 +20,7 @@ class AppRouter extends React.Component {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/main" element={<Main />} />
-        <Route path="/calling" element={<Calling />} />
+        <Route path="/callLog" element={<CallLog />} />
         <Route path="/callList" element={<CallList />} />
         <Route path="/chatbot" element={<Chatbot />} />
       </Routes>
