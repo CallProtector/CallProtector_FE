@@ -1,0 +1,79 @@
+.placeholder-nav {
+  height: 100px;
+}
+
+.box-wrapper {
+  display: flex;
+  flex-grow: 1;
+  gap: 20px; /* 박스 사이 간격 */
+  margin-top: 20px;
+  min-height: 0;
+}
+
+.box1 {
+  display: flex;
+  background-color: white;
+  padding: 24px;
+  border-radius: 20px;
+  height: 110px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.call-title {
+  font-size: 36px;
+}
+
+.box2 {
+  flex: 5;
+  padding: 24px;
+  background-color: white;
+  border-radius: 20px;
+  overflow: auto; /* 내용이 넘치면 스크롤 */
+  height: 100%;
+}
+
+.box3 {
+  flex: 2;
+  padding: 24px;
+  background-color: white;
+  border-radius: 20px;
+  overflow: auto;
+}
+
+.call-date,
+.timer {
+  color: #757575;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.total {
+  padding: 20px;
+  /* width: 100%; */
+  background-color: #f3f6fe;
+  min-height: 100vh;
+}
+
+.body {
+  background-color: #f3f6fe;
+}
+
+.section-header {
+  display: flex;
+  text-align: center;
+}
+
+.ai-note {
+  margin-left: auto;
+  font-size: 15px;
+  color: #757575;
+}
+
+.call-details {
+  margin-bottom: 24px;
+}
+
+.left-info {
+  padding: 20px;
+}
