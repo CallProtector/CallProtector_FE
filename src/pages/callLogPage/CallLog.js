@@ -1,7 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import "./CallLog.css";
 
 const CallLog = () => {
+  const location = useLocation();
+  console.log("location.state:", location.state);
+
+  useEffect(() => {
+    if (location.state?.callAccepted) {
+      console.log("📞 통화중(통화 페이지 이동)");
+    } else {
+      console.log("❗통화 상태 정보 없음 (state=null)");
+    }
+  }, []);
+
   let callNumber = "D250319-06";
   let callDate = "3.28 금 오후 1:26";
   let callTime = "3:20";
