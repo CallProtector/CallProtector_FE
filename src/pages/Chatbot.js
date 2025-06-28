@@ -80,7 +80,7 @@ const ChatHeader = styled.div`
   font-size: 24px;
 `;
 
-const ChatTitle= styled.div`
+const ChatTitle = styled.div`
   display: flex;
   justify-content: space-between;
   font-weight: bold;
@@ -209,16 +209,16 @@ const Chatbot = () => {
       </Sidebar>
 
       <ChatArea>
+
         <ChatHeader>
           <ChatTitle>
-          {selected}
-          {activeTab === '상담별' && (
-            <CallLogButton>통화 내용 보기</CallLogButton>
-          )}
+            {selected}
+            <CallLogButton style={{ visibility: activeTab === '상담별' ? 'visible' : 'hidden' }}>
+              통화 내용 보기
+            </CallLogButton>
           </ChatTitle>
           <Date>2025년 3월 19일</Date>
         </ChatHeader>
-
         <ChatBody>
           {messages.map((msg, idx) => (
             <ChatBubble key={idx} fromUser={msg.fromUser}>
