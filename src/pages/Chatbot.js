@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FiSend } from 'react-icons/fi';
+import { FaPlus } from "react-icons/fa"
+import ChatListModal from '../components/Modal/ChatListModal';
 
 const Container = styled.div`
   display: flex;
@@ -29,7 +31,7 @@ const Tab = styled.button`
   border-radius: 13px 13px 0 0;
   background: ${({ active }) => (active ? '#fff' : 'transparent')};
   border: none;
-  border-bottom: ${({ active }) => (active ? '3px solid #7a5af8' : 'none')};
+  border-bottom: ${({ active }) => (active ? '3px solid #5C24AF' : 'none')};
   cursor: pointer;
   color: ${({ active }) => (active ? '#000' : '#888')};
 `;
@@ -43,6 +45,9 @@ const SidebarActionButton = styled.button`
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
+  display: flex;         
+  align-items: center;    
+  gap: 8px;       
   transition: background 0.2s;
   border-bottom: 1px solid #efefef;
   
@@ -90,7 +95,7 @@ const CallLogButton = styled.button`
   padding: 8px 13px;
   font-weight: bold;
   background-color: #fff;
-  border: 2px solid #7a5af8;
+  border: 2px solid #5C24AF;
   border-radius: 14px;
   &:hover {
     background-color: #efefef;
@@ -109,7 +114,7 @@ const ChatBody = styled.div`
 `;
 
 const ChatBubble = styled.div`
-  max-width: 60%;
+  max-width: 70%;
   padding: 15px;
   border-radius: 8px;
   background-color: ${({ fromUser }) => (fromUser ? '#ffe9ab' : '#fff')};
@@ -145,7 +150,7 @@ const SendButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: #7a5af8;
+  color: #5C24AF;
   padding: 0;
   display: flex;
   align-items: center;
@@ -155,6 +160,7 @@ const SendButton = styled.button`
 const Chatbot = () => {
   const [selected, setSelected] = useState('D250319-06');
   const [activeTab, setActiveTab] = useState('일반');
+  const [showModal, setShowModal] = useState(false);
 
   const [messages] = useState([
     {
@@ -190,13 +196,15 @@ const Chatbot = () => {
 
         {activeTab === '일반' ? (
           <SidebarActionButton onClick={() => alert('새 채팅 시작')}>
-            + 새로운 채팅
+            <FaPlus size={14}/> 새로운 채팅
           </SidebarActionButton>
         ) : (
-          <SidebarActionButton onClick={() => alert('상담 내역 불러오기')}>
-            + 상담 내역 불러오기
+          <SidebarActionButton onClick={() => setShowModal(true)}>
+            <FaPlus size={14}/>  상담 내역 불러오기
           </SidebarActionButton>
         )}
+
+        {showModal && <ChatListModal onClose={() => setShowModal(false)} />}
 
         <ChatList>
           <ChatItem selected={selected === 'D250319-06'} onClick={() => setSelected('D250319-06')}>
