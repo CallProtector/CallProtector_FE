@@ -6,7 +6,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Main from "./pages/Main";
 import CallLog from "./pages/callLogPage/CallLog";
-import CallList from "./pages/CallList";
+import CallList from "./pages/callListPage/CallList";
 import Chatbot from "./pages/Chatbot";
 import TwilioCallReceiver from "./components/TwilioCallReceiver";
 

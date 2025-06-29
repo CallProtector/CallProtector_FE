@@ -1,0 +1,152 @@
+.call-list-container {
+  padding: 40px;
+  background-color: #f3f6fe;
+}
+
+.title {
+  font-size: 43px;
+  margin-bottom: 20px;
+}
+
+.tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tab-button {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.tab-button.active {
+  border-bottom: 2px solid #5c24af;
+  color: #5c24af;
+}
+
+.search-bar {
+  display: flex;
+  gap: 20px;
+  height: 60px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid white;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: bold;
+  padding-left: 30px;
+}
+
+.search-bar input::placeholder {
+  color: #d9d9d9;
+  margin-left: 50px;
+}
+
+.search-btn {
+  padding: 8px 16px;
+  background-color: #5c24af;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  min-width: 120px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.sort-options {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.sort-options span {
+  cursor: pointer;
+  color: #666;
+}
+
+.sort-options .selected {
+  font-weight: bold;
+  color: #000;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 40px;
+}
+
+.pagination button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: #e0e0e0;
+  cursor: pointer;
+}
+
+.pagination .active {
+  background-color: #5c24af;
+  color: white;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.sort-options {
+  display: flex;
+  gap: 12px;
+}
+
+.sort-options span {
+  cursor: pointer;
+  color: #666;
+}
+
+.sort-options .selected {
+  font-weight: bold;
+  color: #000;
+}
+
+.call-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-top: 16px;
+}
+
+.call-table th,
+.call-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.call-table th {
+  background-color: #f1eefc;
+  font-weight: bold;
+  color: #5c24af;
+}
