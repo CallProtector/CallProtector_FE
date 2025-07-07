@@ -28,14 +28,14 @@ function useInView(threshold = 0.1) {
 
 const LandingWrapper = styled.div`
   width: 100%;
-  min-height: 100%;
   background: linear-gradient(to bottom, rgb(249, 250, 255) 0%, rgb(217, 221, 248) 100%);
   overflow-x: hidden;
+  overflow-y: clip; 
 `;
 
 const HeroSection = styled.section`
   position: relative;
-  padding: 150px 40px 100px;
+  padding: 150px 40px 90px;
   text-align: center;
 `;
 
@@ -104,7 +104,7 @@ const InfoText2 = styled.p`
 
 const StepSection = styled.section`
   text-align: center;
-  padding: 100px 60px;
+  padding: 50px 60px;
   position: relative;
   opacity: 0;
   transform: translateY(100px);
@@ -239,7 +239,7 @@ const LandingPage = () => {
         </FadeInCard>
       </InfoSection>
 
-      <Bubble size="80px" top="1500px" right="70px" floating />
+      <Bubble size="80px" top="1600px" right="70px" floating />
 
       <StepSection ref={stepRef} className={stepVisible ? 'visible' : ''}>
         <StepTitle>“상담원을 지키는 기술, 작지만 강력한 기능들”</StepTitle>
@@ -292,7 +292,7 @@ const LandingPage = () => {
           실시간 음성 필터링부터 법률 대응까지,<br />
           상담원을 위한 든든한 보호막을 지금 만나보세요.
         </CTAText>
-        <CTAButton  onClick={() => navigate('/login')}>➔ 서비스 시작하기</CTAButton>
+        <CTAButton onClick={() => navigate('/login')}>➔ 서비스 시작하기</CTAButton>
       </CTASection>
     </LandingWrapper>
   );

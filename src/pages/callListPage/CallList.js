@@ -48,7 +48,6 @@ const CallList = () => {
 
   return (
     <>
-      <nav className="placeholder-nav">네브바 자리</nav>
       <div className="call-list-container">
         <h2 className="title">상담기록</h2>
 

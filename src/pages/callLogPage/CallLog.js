@@ -42,7 +42,6 @@ const CallLog = () => {
 
   return (
     <div className="total">
-      <nav className="placeholder-nav">네브바 자리</nav>
       <div className="box1">
         <div className="left-info">
           <h2 className="call-title">{callNumber}</h2>

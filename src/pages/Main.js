@@ -6,8 +6,6 @@ const Main = () => {
 
   return (
     <div style={styles.page}>
-      <nav className="placeholder-nav">네브바 자리</nav>
-
       <div style={styles.content}>
         <div style={styles.textBox}>
           <p style={styles.text}>
@@ -28,7 +26,7 @@ const Main = () => {
 
 const styles = {
   page: {
-    height: "100vh",
+    height: "100%",
     backgroundColor: "#f3f6fe",
     display: "flex",
     flexDirection: "column",

@@ -2,16 +2,13 @@
 .total {
   padding: 20px;
   background-color: #f3f6fe;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
   font-family: "Segoe UI", sans-serif;
 }
 
-/* 상단 네브바 placeholder */
-.placeholder-nav {
-  height: 80px;
-  font-size: 18px;
-  color: #aaa;
-}
+
 
 /* 상단 정보 박스 */
 .box1 {
@@ -77,6 +74,7 @@
   display: flex;
   gap: 20px;
   flex: 1;
+  min-height: 0;
 }
 
 /* 음성 기록 */
@@ -86,7 +84,7 @@
   padding: 24px;
   border-radius: 20px;
   overflow: auto;
-  min-height: calc(100vh - 240px);
+  min-height: calc(100vh - 300px);
 }
 
 .section-header {
@@ -112,6 +110,7 @@
 .conversation strong {
   font-size: 20px;
 }
+
 .conversation p {
   margin-bottom: 12px;
   line-height: 1.6;
@@ -131,9 +130,10 @@
   background-color: white;
   padding: 24px;
   border-radius: 20px;
-  min-height: calc(100vh - 240px);
-  justify-content: center;
-  align-items: center;
+  min-height: calc(100vh - 300px);
+  /* justify-content: center;
+  align-items: center; */
+  overflow-y: auto; 
 }
 
 .summary-content {
@@ -149,6 +149,7 @@
   text-align: center;
   line-height: 1.6;
 }
+
 /* summary-hint 수직 중앙 정렬이 안되서 우선 마진탑으로 넣어둠 */
 
 /* 로딩 상태 */
@@ -176,6 +177,7 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

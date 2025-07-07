@@ -6,7 +6,7 @@ import ChatListModal from '../components/Modal/ChatListModal';
 
 const Container = styled.div`
   display: flex;
-  height: 100vh;
+  height: 100%;
 `;
 
 const Sidebar = styled.div`
