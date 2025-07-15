@@ -49,7 +49,7 @@ const CallList = () => {
   return (
     <>
       <div className="call-list-container">
-        <h2 className="title">상담기록</h2>
+        <h2 className="title">상담내역</h2>
 
         {/* 검색창 + 검색 버튼 */}
         <div className="search-bar">
