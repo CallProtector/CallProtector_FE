@@ -157,7 +157,6 @@ const StepIcon = styled.img`
 
 const StepText = styled.p`
   font-size: 24px;
-  font-weight: bold;
 `;
 
 const CTASection = styled.section`

@@ -94,88 +94,99 @@ const BottomText = styled.div`
 `;
 
 const Signup = () => {
-    const [verified, setVerified] = useState(false);
-    const [step, setStep] = useState(1);
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [code, setCode] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [resendCount, setResendCount] = useState(0);
-    const [message, setMessage] = useState('');
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [resendCount, setResendCount] = useState(0);
+  const [message, setMessage] = useState('');
 
   const handleEmailSend = () => {
-        alert(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
+    alert(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
     setStep(2);
     setResendCount(prev => prev + 1);
     setMessage(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
   };
-    const handleCodeVerify = () => {
-        alert('인증이 완료되었습니다.');
-        setStep(3);
-    }; const isCodeValid = code.length > 0;
-    const isPasswordValid = password.length >= 8 && password === confirmPassword;
+  const handleCodeVerify = () => {
+    alert('인증이 완료되었습니다.');
+    setStep(3);
+  };
+  const isCodeValid = code.length > 0;
+  const isPasswordValid = password.length >= 8 && password === confirmPassword;
+  const isPhoneValid = /^\d{10,11}$/.test(phone);
+  const isSignupValid = isPasswordValid && isPhoneValid;
 
-    return (
-        <Container>
-            <Title>회원가입</Title>
-            <Form>
-                <InputTitle>이름</InputTitle>
-                <Input placeholder="이름을 입력해주세요" value={name} onChange={e => setName(e.target.value)} disabled={step > 1} />
-                <InputTitle>이메일</InputTitle>
-                <Row>
-                    <Input
-                        placeholder="example@gmail.com"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        disabled={step > 1}
-                        style={{ flex: 1 }}
-                    />
-                    {step === 1 && <SmallButton onClick={handleEmailSend}>인증 요청</SmallButton>}
-                    {step >= 2 && (step === 2 ? <SmallButton onClick={handleEmailSend}>재전송</SmallButton> : <SmallButton disabled>완료</SmallButton>)}
-                </Row>
-                {step === 2 && (
-                    <>
-                        {message && <Message>{message}</Message>}
-                        <InputTitle>인증번호</InputTitle>
-                        <Input
-                            placeholder="인증번호를 입력해주세요"
-                            type="password"
-                            value={code}
-                            onChange={e => setCode(e.target.value)}
-                        />
-                        <Button onClick={handleCodeVerify} disabled={!isCodeValid}>다음</Button>
-                    </>
-                )}
-                {step === 3 && (
-                    <>
-                        <InputTitle>비밀번호</InputTitle>
-                        <Input
-                            placeholder="비밀번호를 입력해주세요"
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                        />
-                        <Message>영문(대소문자), 숫자, 특수문자 포함 8~20자리</Message>
-                        <InputTitle>비밀번호 확인</InputTitle>
-                        <Input
-                            placeholder="비밀번호를 확인해주세요"
-                            type="password"
-                            value={confirmPassword}
-                            onChange={e => setConfirmPassword(e.target.value)}
-                        />
-                        {password && confirmPassword && password === confirmPassword && (
-                            <CheckMark>✔</CheckMark>
-                        )}
-                        <Button disabled={!isPasswordValid}>회원가입</Button>
-                    </>
-                )}
-            </Form>
-            <BottomText>
-                이미 회원이신가요? <a href="/login" style={{ color: '#5C24AF' }}>로그인</a>
-            </BottomText>
-        </Container>
-    );
+  return (
+    <Container>
+      <Title>회원가입</Title>
+      <Form>
+        <InputTitle>이름</InputTitle>
+        <Input placeholder="이름을 입력해주세요" value={name} onChange={e => setName(e.target.value)} disabled={step > 1} />
+        <InputTitle>이메일</InputTitle>
+        <Row>
+          <Input
+            placeholder="example@gmail.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            disabled={step > 1}
+            style={{ flex: 1 }}
+          />
+          {step === 1 && <SmallButton onClick={handleEmailSend}>인증 요청</SmallButton>}
+          {step >= 2 && (step === 2 ? <SmallButton onClick={handleEmailSend}>재전송</SmallButton> : <SmallButton disabled>완료</SmallButton>)}
+        </Row>
+        {step === 2 && (
+          <>
+            {message && <Message>{message}</Message>}
+            <InputTitle>인증번호</InputTitle>
+            <Input
+              placeholder="인증번호를 입력해주세요"
+              type="password"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+            />
+            <Button onClick={handleCodeVerify} disabled={!isCodeValid}>다음</Button>
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <InputTitle>비밀번호</InputTitle>
+            <Input
+              placeholder="비밀번호를 입력해주세요"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
+            <Message>영문(대소문자), 숫자, 특수문자 포함 8~20자리</Message>
+            <InputTitle>비밀번호 확인</InputTitle>
+            <Input
+              placeholder="비밀번호를 확인해주세요"
+              type="password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+            />
+            {password && confirmPassword && password === confirmPassword && (
+              <CheckMark>✔</CheckMark>
+            )}
+            <InputTitle>전화번호</InputTitle>
+            <Input
+              placeholder="전화번호를 입력해주세요"
+              type="phone"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+            />
+            <Button disabled={!isSignupValid}>회원가입</Button>
+
+          </>
+        )}
+      </Form>
+      <BottomText>
+        이미 회원이신가요? <a href="/login" style={{ color: '#5C24AF' }}>로그인</a>
+      </BottomText>
+    </Container>
+  );
 };
 
 export default Signup;
