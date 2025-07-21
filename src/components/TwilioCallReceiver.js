@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import IncomingCallModal from "./Modal/IncomingCallModal"; // 모달 컴포넌트
+import API from "../api/axiosInstance";
 
 const TwilioCallReceiver = () => {
   const [showModal, setShowModal] = useState(false);
@@ -10,12 +11,14 @@ const TwilioCallReceiver = () => {
 
   useEffect(() => {
     console.log("📡 TwilioCallReceiver mounted!");
+    console.log("✅ API URL:", process.env.REACT_APP_API_URL);
 
     const initTwilio = async () => {
       try {
-        const res = await fetch("/token");
-        const data = await res.json();
+        const res = await API.get("/api/token");
+        const data = res.data;
         const accessToken = data.twilioAccessToken;
+        console.log("응답 확인:", data);
 
         const device = new window.Twilio.Device(accessToken, { debug: true });
         deviceRef.current = device;
