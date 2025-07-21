@@ -21,7 +21,7 @@
   border-bottom: 2px solid transparent;
   cursor: pointer;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .tab-button.active {
@@ -42,8 +42,7 @@
   padding: 8px 12px;
   border: 1px solid white;
   border-radius: 20px;
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 20px;
   padding-left: 30px;
 }
 
@@ -60,7 +59,7 @@
   border-radius: 20px;
   cursor: pointer;
   min-width: 120px;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
 }
 
@@ -120,6 +119,7 @@
 .sort-options span {
   cursor: pointer;
   color: #666;
+  font-size: 20px;
 }
 
 .sort-options .selected {
@@ -142,7 +142,7 @@
   padding: 16px;
   text-align: left;
   border-bottom: 1px solid #eee;
-  font-size: 14px;
+  font-size: 20px;
 }
 
 .call-table th {

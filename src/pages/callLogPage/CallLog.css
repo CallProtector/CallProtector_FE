@@ -1,79 +1,212 @@
-.placeholder-nav {
-  height: 100px;
-}
-
-.box-wrapper {
-  display: flex;
-  flex-grow: 1;
-  gap: 20px; /* 박스 사이 간격 */
-  margin-top: 20px;
+/* 전체 배경 */
+.total {
+  padding: 20px;
+  background-color: #f3f6fe;
+  height: 100%;
   min-height: 0;
+  flex-direction: column;
+  font-family: "Segoe UI", sans-serif;
 }
 
+
+
+/* 상단 정보 박스 */
 .box1 {
   display: flex;
-  background-color: white;
-  padding: 24px;
-  border-radius: 20px;
-  height: 110px;
   justify-content: space-between;
   align-items: center;
+  background-color: white;
+  padding: 24px;
+  border-radius: 20px;
+  margin-bottom: 20px;
 }
 
+/* 왼쪽 정보 */
 .call-title {
-  font-size: 36px;
-}
-
-.box2 {
-  flex: 5;
-  padding: 24px;
-  background-color: white;
-  border-radius: 20px;
-  overflow: auto; /* 내용이 넘치면 스크롤 */
-  height: 100%;
-}
-
-.box3 {
-  flex: 2;
-  padding: 24px;
-  background-color: white;
-  border-radius: 20px;
-  overflow: auto;
+  font-size: 38px;
+  margin-bottom: 10px;
 }
 
 .call-date,
 .timer {
   color: #757575;
   font-size: 20px;
-  font-weight: bold;
+  margin-right: 16px;
 }
 
-.total {
-  padding: 20px;
-  /* width: 100%; */
-  background-color: #f3f6fe;
-  min-height: 100vh;
+.call-details {
+  display: flex;
+  gap: 8px;
 }
 
-.body {
-  background-color: #f3f6fe;
+/* 오른쪽 경고 정보 */
+.right-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: right;
+}
+
+.warning-text {
+  font-size: 20px;
+  font-weight: normal;
+  color: #757575;
+  margin-bottom: 10px;
+}
+
+/* 경고 게이지 바 */
+.warning-bar {
+  width: 350px;
+  height: 28px;
+  background-color: #e0e0e0;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background-color: #5c24af;
+  transition: width 0.4s ease-in-out;
+}
+
+/* 중간 컨텐츠 영역 */
+.box-wrapper {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 음성 기록 */
+.box2 {
+  flex: 5;
+  background-color: white;
+  padding: 24px;
+  border-radius: 20px;
+  overflow: auto;
+  min-height: calc(100vh - 300px);
 }
 
 .section-header {
   display: flex;
-  text-align: center;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: bold;
 }
 
 .ai-note {
-  margin-left: auto;
-  font-size: 15px;
+  font-size: 20px;
   color: #757575;
 }
 
-.call-details {
-  margin-bottom: 24px;
+.conversation {
+  padding: 20px;
 }
 
-.left-info {
+.conversation strong {
+  font-size: 20px;
+}
+
+.conversation p {
+  margin-bottom: 12px;
+  line-height: 1.6;
+  text-align: left;
+  font-size: 20px;
+}
+
+/* 부적절 발언 강조 */
+.warning-highlight {
+  color: #ff0000;
+  font-weight: bold;
+}
+
+/* AI 요약 */
+.box3 {
+  flex: 2;
+  background-color: white;
+  padding: 24px;
+  border-radius: 20px;
+  min-height: calc(100vh - 300px);
+  /* justify-content: center;
+  align-items: center; */
+  overflow-y: auto; 
+}
+
+.summary-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ai-summary-hint {
+  margin-top: 300px;
+  font-size: 20px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* summary-hint 수직 중앙 정렬이 안되서 우선 마진탑으로 넣어둠 */
+
+/* 로딩 상태 */
+.ai-summary-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #555;
+  height: 100%;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ccc;
+  border-top: 4px solid #888;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 요약 완료 상태 */
+.ai-summary-result {
   padding: 20px;
+  font-size: 20px;
+  width: 100%;
+}
+
+.summary-section {
+  margin-bottom: 20px;
+}
+
+.summary-section ul {
+  margin: 6px 0 0 20px;
+  padding: 0;
+  list-style-type: disc;
+}
+
+/* 대화 줄별 블록 */
+.conversation .line {
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.conversation .line p {
+  margin: 4px 0 0 0;
+  line-height: 1.6;
 }
