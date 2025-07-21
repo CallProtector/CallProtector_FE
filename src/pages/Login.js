@@ -159,6 +159,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate(); 
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
    const handleLogin = async (e) => {
     e.preventDefault();
@@ -166,7 +167,7 @@ const Login = () => {
     console.log('로그인 요청 시작');
 
     try {
-      const response = await axios.post('http://localhost:8080/users/auth/login', {
+      const response = await axios.post(`${API_BASE_URL}/users/auth/login`, {
         email,
         password
       }, 
