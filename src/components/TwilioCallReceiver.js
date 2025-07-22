@@ -14,7 +14,6 @@ const TwilioCallReceiver = () => {
 
   useEffect(() => {
     console.log("📡 TwilioCallReceiver mounted!");
-    console.log("✅ API URL:", process.env.REACT_APP_API_URL);
     console.log("✅ API URL:", API_BASE_URL);
 
     const initTwilio = async () => {
@@ -23,7 +22,7 @@ const TwilioCallReceiver = () => {
         const res = await axios.get(`${API_BASE_URL}/api/token`);
 
         const data = res.data;
-        const accessToken = data.twilioAccessToken;
+        const accessToken = data.result.twilioAccessToken;
         console.log("응답 확인:", data);
 
         const device = new window.Twilio.Device(accessToken, { debug: true });
