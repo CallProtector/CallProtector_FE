@@ -93,7 +93,7 @@ const InfoTitle = styled.h3`
 
 const InfoText1 = styled.p`
   font-size: 27px;
-  font-weight: bold;
+  // font-weight: bold;
   margin-bottom: 30px;
 `;
 
@@ -262,7 +262,7 @@ const LandingPage = () => {
           </StepCurve>
 
           <StepItem posX={12} posY={60}>
-            <StepIcon src={feat1} alt="실시간 욕설 감지" />
+            <StepIcon src={feat1} alt="실시간 욕설 감지" style={{ width: '150px', height: '105px' }}/>
             <StepText>실시간 욕설 감지<br />및 자동 음소거</StepText>
           </StepItem>
 
@@ -277,7 +277,7 @@ const LandingPage = () => {
           </StepItem>
 
           <StepItem posX={88} posY={35}>
-            <StepIcon src={feat4} alt="고객관리" style={{ width: '150px', height: '120px' }} />
+            <StepIcon src={feat4} alt="고객관리" style={{ width: '170px', height: '120px' }} />
             <StepText>효율적인 고객관리</StepText>
           </StepItem>
         </StepFlowContainer>
