@@ -138,6 +138,7 @@ const Signup = () => {
   const handleCodeVerify = async () => {
     try {
       const response = await axios.post(`http://localhost:8080/api/auth/verify-code`, {
+        // const response = await axios.post(`${API_BASE_URL}/api/auth/verify-code`, {
         email,
         code
       }, {
@@ -146,7 +147,7 @@ const Signup = () => {
         }
       });
 
-      console.log('응답 데이터:', response.data); 
+      console.log('응답 데이터:', response.data);
 
       if (response.data?.isSuccess) {
         alert(response.data.result || '이메일 인증이 완료되었습니다.');
@@ -162,7 +163,8 @@ const Signup = () => {
 
   const handleSignup = async () => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
+      const response = await axios.post(`http://localhost:8080/api/auth/signup`, {
+        // const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
         name,
         email,
         password,
@@ -172,7 +174,7 @@ const Signup = () => {
           'Content-Type': 'application/json'
         }
       });
-
+      console.log('회원가입 응답:', response.data);
       if (response.data?.isSuccess) {
         alert('회원가입 성공! 로그인 페이지로 이동합니다.');
         navigate('/login');
