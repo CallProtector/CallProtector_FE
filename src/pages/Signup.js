@@ -110,38 +110,59 @@ const Signup = () => {
   const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const handleEmailSend = async () => {
-  try {
-    const response = await axios.post(`http://localhost:8080/api/auth/send-code`, {
-      email
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
+    try {
+      // const response = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
+      const response = await axios.post(`http://localhost:8080/api/auth/send-code`, {
+        email
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data?.isSuccess) {
+        alert(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
+        setStep(2);
+        setResendCount(prev => prev + 1);
+        setMessage(response.data.result);
+      } else {
+        alert(`인증 요청 실패: ${response.data.message || '알 수 없는 오류'}`);
       }
-    });
 
-    if (response.data?.isSuccess) {
-      alert(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
-      setStep(2);
-      setResendCount(prev => prev + 1);
-      setMessage(response.data.result);  
-    } else {
-      alert(`인증 요청 실패: ${response.data.message || '알 수 없는 오류'}`);
+    } catch (error) {
+      console.error('이메일 인증 요청 실패:', error);
+      alert('이메일 인증 요청 중 오류가 발생했습니다.');
     }
+  };
 
-  } catch (error) {
-    console.error('이메일 인증 요청 실패:', error);
-    alert('이메일 인증 요청 중 오류가 발생했습니다.');
-  }
-};
+  const handleCodeVerify = async () => {
+    try {
+      const response = await axios.post(`http://localhost:8080/api/auth/verify-code`, {
+        email,
+        code
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
-  const handleCodeVerify = () => {
-    alert('인증이 완료되었습니다.');
-    setStep(3);
+      console.log('응답 데이터:', response.data); 
+
+      if (response.data?.isSuccess) {
+        alert(response.data.result || '이메일 인증이 완료되었습니다.');
+        setStep(3);
+      } else {
+        alert(`인증 실패: ${response.data.message || '인증번호가 올바르지 않습니다.'}`);
+      }
+    } catch (error) {
+      console.error('이메일 인증 코드 검증 실패:', error);
+      alert('이메일 인증 중 오류가 발생했습니다.');
+    }
   };
 
   const handleSignup = async () => {
     try {
-      const response = await axios.post(`https://${API_BASE_URL}/api/auth/signup`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
         name,
         email,
         password,
