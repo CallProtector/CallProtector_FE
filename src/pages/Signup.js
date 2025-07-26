@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
   display: flex;
@@ -104,16 +106,88 @@ const Signup = () => {
   const [resendCount, setResendCount] = useState(0);
   const [message, setMessage] = useState('');
 
-  const handleEmailSend = () => {
-    alert(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
-    setStep(2);
-    setResendCount(prev => prev + 1);
-    setMessage(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
+  const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+  const handleEmailSend = async () => {
+    try {
+      // const response = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
+      const response = await axios.post(`http://localhost:8080/api/auth/send-code`, {
+        email
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data?.isSuccess) {
+        alert(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
+        setStep(2);
+        setResendCount(prev => prev + 1);
+        setMessage(response.data.result);
+      } else {
+        alert(`인증 요청 실패: ${response.data.message || '알 수 없는 오류'}`);
+      }
+
+    } catch (error) {
+      console.error('이메일 인증 요청 실패:', error);
+      alert('이메일 인증 요청 중 오류가 발생했습니다.');
+    }
   };
-  const handleCodeVerify = () => {
-    alert('인증이 완료되었습니다.');
-    setStep(3);
+
+  const handleCodeVerify = async () => {
+    try {
+      const response = await axios.post(`http://localhost:8080/api/auth/verify-code`, {
+        // const response = await axios.post(`${API_BASE_URL}/api/auth/verify-code`, {
+        email,
+        code
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('응답 데이터:', response.data);
+
+      if (response.data?.isSuccess) {
+        alert(response.data.result || '이메일 인증이 완료되었습니다.');
+        setStep(3);
+      } else {
+        alert(`인증 실패: ${response.data.message || '인증번호가 올바르지 않습니다.'}`);
+      }
+    } catch (error) {
+      console.error('이메일 인증 코드 검증 실패:', error);
+      alert('이메일 인증 중 오류가 발생했습니다.');
+    }
   };
+
+  const handleSignup = async () => {
+    try {
+      const response = await axios.post(`http://localhost:8080/api/auth/signup`, {
+        // const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
+        name,
+        email,
+        password,
+        phone
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('회원가입 응답:', response.data);
+      if (response.data?.isSuccess) {
+        alert('회원가입 성공! 로그인 페이지로 이동합니다.');
+        navigate('/login');
+      } else {
+        alert(`회원가입 실패: ${response.data.message || '알 수 없는 오류'}`);
+      }
+
+    } catch (error) {
+      console.error('회원가입 실패:', error);
+      alert('회원가입 중 오류가 발생했습니다.');
+    }
+  };
+
   const isCodeValid = code.length > 0;
   const isPasswordValid = password.length >= 8 && password === confirmPassword;
   const isPhoneValid = /^\d{10,11}$/.test(phone);
@@ -177,7 +251,9 @@ const Signup = () => {
               value={phone}
               onChange={e => setPhone(e.target.value)}
             />
-            <Button disabled={!isSignupValid}>회원가입</Button>
+            <Button disabled={!isSignupValid} onClick={handleSignup}>
+              회원가입
+            </Button>
 
           </>
         )}

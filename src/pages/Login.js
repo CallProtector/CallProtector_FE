@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import axios from 'axios'
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
@@ -158,35 +158,38 @@ const BottomText = styled.div`
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-   const handleLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     console.log('로그인 요청 시작');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/users/auth/login`, {
+      // const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+      const response = await axios.post(`http://localhost:8080/api/auth/login`, {
         email,
         password
-      }, 
-    {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }
-);
+      },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-     const { token, id } = response.data;
+      const { token, id } = response.data.result;
 
-      console.log('서버 응답:', response);
+      localStorage.setItem('accessToken', token);
+      localStorage.setItem('userId', id);
 
-
+      console.log('accessToken:', localStorage.getItem('accessToken'));
+      console.log('userId:', localStorage.getItem('userId'));
+      console.log('서버 응답:', response.data);
 
       alert('로그인 성공!');
-      // 로그인 후 메인으로 이동
-      navigate('/main'); 
+      navigate('/main');
 
     } catch (error) {
       console.error('로그인 실패:', error);
@@ -225,7 +228,7 @@ const Login = () => {
             <InputTitle>이메일</InputTitle>
             <Input type="email" placeholder="이메일을 입력해주세요" value={email} onChange={e => setEmail(e.target.value)} />
             <InputTitle>비밀번호</InputTitle>
-            <Input type="password" placeholder="비밀번호를 입력해주세요" value={password} onChange={e => setPassword(e.target.value)}/>
+            <Input type="password" placeholder="비밀번호를 입력해주세요" value={password} onChange={e => setPassword(e.target.value)} />
             <CheckboxWrapper>
               <CheckboxLabel>
                 <input type="checkbox" style={{ marginRight: '8px' }} />
