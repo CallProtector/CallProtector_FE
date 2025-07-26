@@ -167,7 +167,8 @@ const Login = () => {
     console.log('로그인 요청 시작');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+      // const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+      const response = await axios.post(`http://localhost:8080/api/auth/login`, {
         email,
         password
       }, 
@@ -180,12 +181,11 @@ const Login = () => {
 
      const { token, id } = response.data;
 
-      console.log('서버 응답:', response);
+      console.log('서버 응답:', response.data);
 
 
 
       alert('로그인 성공!');
-      // 로그인 후 메인으로 이동
       navigate('/main'); 
 
     } catch (error) {
