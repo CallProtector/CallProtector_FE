@@ -111,8 +111,7 @@ const Signup = () => {
 
   const handleEmailSend = async () => {
     try {
-      // const response = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
-      const response = await axios.post(`http://localhost:8080/api/auth/send-code`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
         email
       }, {
         headers: {
@@ -137,8 +136,7 @@ const Signup = () => {
 
   const handleCodeVerify = async () => {
     try {
-      const response = await axios.post(`http://localhost:8080/api/auth/verify-code`, {
-        // const response = await axios.post(`${API_BASE_URL}/api/auth/verify-code`, {
+        const response = await axios.post(`${API_BASE_URL}/api/auth/verify-code`, {
         email,
         code
       }, {
@@ -163,8 +161,7 @@ const Signup = () => {
 
   const handleSignup = async () => {
     try {
-      const response = await axios.post(`http://localhost:8080/api/auth/signup`, {
-        // const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
+        const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
         name,
         email,
         password,
