@@ -6,7 +6,8 @@ import ChatListModal from '../components/Modal/ChatListModal';
 
 const Container = styled.div`
   display: flex;
-  height: 100%;
+  height: 93dvh;
+  overflow: hidden;
 `;
 
 const Sidebar = styled.div`
@@ -77,6 +78,7 @@ const ChatArea = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 `;
 
 const ChatHeader = styled.div`
@@ -193,7 +195,6 @@ const Chatbot = () => {
 
     let sessionId = selected;
 
-    // ✅ 채팅방이 없으면 새로 만들고 선택
     if (!sessionId) {
       sessionId = `chat-${Date.now()}`;
       setChatSessions(prev => [...prev, sessionId]);
@@ -201,7 +202,6 @@ const Chatbot = () => {
       setSelected(sessionId);
     }
 
-    // ✅ 메시지 추가
     const newMessage = { fromUser: true, text };
 
     setChatMap(prev => ({
