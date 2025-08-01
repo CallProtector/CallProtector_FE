@@ -188,39 +188,52 @@ const Chatbot = () => {
   const setCurrentChatMap = activeTab === '일반' ? setGeneralChatMap : setConsultChatMap;
   const messages = selected ? currentChatMap[selected] || [] : [];
 
+  const [tempSessionId, setTempSessionId] = useState(null); // 임시 세션 ID
+
+  // 새로운 채팅 클릭 시: selected만 지정 (목록에 추가하지 않음)
   const startNewChat = () => {
     const newId = `chat-${Date.now()}`;
-    setCurrentSessions((prev) => [...prev, newId]);
-    setCurrentChatMap((prev) => ({ ...prev, [newId]: [] }));
+    setTempSessionId(newId);
     setSelected(newId);
+    setInputText('');
   };
 
+  // 메시지 전송 시: 세션 ID가 목록에 없으면 새로 추가
   const handleSend = () => {
     const text = inputText.trim();
     if (!text) return;
 
     let sessionId = selected;
 
+    // 선택된 세션이 없을 경우, 임시 세션 ID 사용
     if (!sessionId) {
       sessionId = `chat-${Date.now()}`;
-      setCurrentSessions((prev) => [...prev, sessionId]);
-      setCurrentChatMap((prev) => ({ ...prev, [sessionId]: [] }));
+      setTempSessionId(sessionId);
       setSelected(sessionId);
     }
 
     const newMessage = { fromUser: true, text };
 
-    setCurrentChatMap((prev) => ({
-      ...prev,
-      [sessionId]: [...(prev[sessionId] || []), newMessage],
-    }));
+    const chatMap = activeTab === '일반' ? generalChatMap : consultChatMap;
+
+    // 세션 목록에 없는 경우에만 세션 추가
+    if (!chatMap[sessionId]) {
+      setCurrentSessions((prev) => [...prev, sessionId]);
+      setCurrentChatMap((prev) => ({ ...prev, [sessionId]: [newMessage] }));
+    } else {
+      setCurrentChatMap((prev) => ({
+        ...prev,
+        [sessionId]: [...prev[sessionId], newMessage],
+      }));
+    }
 
     setSelected(sessionId);
     setInputText('');
+    setTempSessionId(null);
   };
 
   useEffect(() => {
-    setSelected(null); 
+    setSelected(null);
   }, [activeTab]);
 
   return (
@@ -249,7 +262,11 @@ const Chatbot = () => {
 
         <ChatList>
           {currentSessions.map((sessionId) => (
-            <ChatItem key={sessionId} selected={selected === sessionId} onClick={() => setSelected(sessionId)}>
+            <ChatItem
+              key={sessionId}
+              selected={selected === sessionId}
+              onClick={() => setSelected(sessionId)}
+            >
               {sessionId}
             </ChatItem>
           ))}
