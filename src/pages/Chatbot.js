@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiSend } from 'react-icons/fi';
 import { FaPlus } from "react-icons/fa";
@@ -175,6 +175,7 @@ const Chatbot = () => {
   const [chatSessions, setChatSessions] = useState([]);
   const [selected, setSelected] = useState(null);
   const [chatMap, setChatMap] = useState({});
+  const [inputText, setInputText] = useState('');
 
   const startNewChat = () => {
     const newId = `chat-${Date.now()}`;
@@ -183,7 +184,41 @@ const Chatbot = () => {
     setSelected(newId);
   };
 
+
   const messages = selected ? chatMap[selected] || [] : [];
+
+  const handleSend = () => {
+    const text = inputText.trim();
+    if (!text) return;
+
+    let sessionId = selected;
+
+    // ✅ 채팅방이 없으면 새로 만들고 선택
+    if (!sessionId) {
+      sessionId = `chat-${Date.now()}`;
+      setChatSessions(prev => [...prev, sessionId]);
+      setChatMap(prev => ({ ...prev, [sessionId]: [] }));
+      setSelected(sessionId);
+    }
+
+    // ✅ 메시지 추가
+    const newMessage = { fromUser: true, text };
+
+    setChatMap(prev => ({
+      ...prev,
+      [sessionId]: [...(prev[sessionId] || []), newMessage],
+    }));
+
+    setSelected(sessionId);
+    setInputText('');
+  };
+
+  useEffect(() => {
+    setChatSessions([]);
+    setChatMap({});
+    setSelected(null);
+  }, []);
+
 
   return (
     <Container>
@@ -219,7 +254,7 @@ const Chatbot = () => {
       </Sidebar>
 
       <ChatArea>
-        {selected && (
+        {selected && messages.length > 0 && (
           <ChatHeader>
             <ChatTitle>
               {selected}
@@ -230,7 +265,6 @@ const Chatbot = () => {
             <ChatDate>2025년 3월 19일</ChatDate>
           </ChatHeader>
         )}
-
         <ChatBody>
           {messages.length === 0 ? (
             <EmptyMessage>상담 중 불편한 상황이 발생하였나요?</EmptyMessage>
@@ -245,8 +279,16 @@ const Chatbot = () => {
 
         <InputArea>
           <InputWrapper>
-            <Input placeholder="메시지를 입력하세요" />
-            <SendButton>
+            <Input
+              placeholder="메시지를 입력하세요"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSend();
+              }}
+            />
+
+            <SendButton onClick={handleSend}>
               <FiSend size={24} />
             </SendButton>
           </InputWrapper>
