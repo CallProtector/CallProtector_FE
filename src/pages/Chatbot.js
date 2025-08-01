@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiSend } from 'react-icons/fi';
-import { FaPlus } from "react-icons/fa";
+import { FaPlus } from 'react-icons/fa';
 import ChatListModal from '../components/Modal/ChatListModal';
 
 const Container = styled.div`
@@ -125,7 +125,7 @@ const ChatBubble = styled.div`
   align-self: ${({ fromUser }) => (fromUser ? 'flex-end' : 'flex-start')};
   margin-bottom: 12px;
   white-space: pre-wrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
 const EmptyMessage = styled.div`
@@ -155,7 +155,6 @@ const Input = styled.input`
   font-size: 15px;
 `;
 
-
 const SendButton = styled.button`
   position: absolute;
   right: 30px;
@@ -174,20 +173,27 @@ const SendButton = styled.button`
 const Chatbot = () => {
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
-  const [chatSessions, setChatSessions] = useState([]);
+
+  const [generalChatSessions, setGeneralChatSessions] = useState([]);
+  const [consultChatSessions, setConsultChatSessions] = useState([]);
+  const [generalChatMap, setGeneralChatMap] = useState({});
+  const [consultChatMap, setConsultChatMap] = useState({});
   const [selected, setSelected] = useState(null);
-  const [chatMap, setChatMap] = useState({});
+
   const [inputText, setInputText] = useState('');
+
+  const currentSessions = activeTab === '일반' ? generalChatSessions : consultChatSessions;
+  const setCurrentSessions = activeTab === '일반' ? setGeneralChatSessions : setConsultChatSessions;
+  const currentChatMap = activeTab === '일반' ? generalChatMap : consultChatMap;
+  const setCurrentChatMap = activeTab === '일반' ? setGeneralChatMap : setConsultChatMap;
+  const messages = selected ? currentChatMap[selected] || [] : [];
 
   const startNewChat = () => {
     const newId = `chat-${Date.now()}`;
-    setChatSessions((prev) => [...prev, newId]);
-    setChatMap((prev) => ({ ...prev, [newId]: [] }));
+    setCurrentSessions((prev) => [...prev, newId]);
+    setCurrentChatMap((prev) => ({ ...prev, [newId]: [] }));
     setSelected(newId);
   };
-
-
-  const messages = selected ? chatMap[selected] || [] : [];
 
   const handleSend = () => {
     const text = inputText.trim();
@@ -197,14 +203,14 @@ const Chatbot = () => {
 
     if (!sessionId) {
       sessionId = `chat-${Date.now()}`;
-      setChatSessions(prev => [...prev, sessionId]);
-      setChatMap(prev => ({ ...prev, [sessionId]: [] }));
+      setCurrentSessions((prev) => [...prev, sessionId]);
+      setCurrentChatMap((prev) => ({ ...prev, [sessionId]: [] }));
       setSelected(sessionId);
     }
 
     const newMessage = { fromUser: true, text };
 
-    setChatMap(prev => ({
+    setCurrentChatMap((prev) => ({
       ...prev,
       [sessionId]: [...(prev[sessionId] || []), newMessage],
     }));
@@ -214,18 +220,19 @@ const Chatbot = () => {
   };
 
   useEffect(() => {
-    setChatSessions([]);
-    setChatMap({});
-    setSelected(null);
-  }, []);
-
+    setSelected(null); 
+  }, [activeTab]);
 
   return (
     <Container>
       <Sidebar>
         <Tabs>
-          <Tab active={activeTab === '일반'} onClick={() => setActiveTab('일반')}>일반</Tab>
-          <Tab active={activeTab === '상담별'} onClick={() => setActiveTab('상담별')}>상담별</Tab>
+          <Tab active={activeTab === '일반'} onClick={() => setActiveTab('일반')}>
+            일반
+          </Tab>
+          <Tab active={activeTab === '상담별'} onClick={() => setActiveTab('상담별')}>
+            상담별
+          </Tab>
         </Tabs>
 
         {activeTab === '일반' ? (
@@ -241,12 +248,8 @@ const Chatbot = () => {
         {showModal && <ChatListModal onClose={() => setShowModal(false)} />}
 
         <ChatList>
-          {chatSessions.map((sessionId) => (
-            <ChatItem
-              key={sessionId}
-              selected={selected === sessionId}
-              onClick={() => setSelected(sessionId)}
-            >
+          {currentSessions.map((sessionId) => (
+            <ChatItem key={sessionId} selected={selected === sessionId} onClick={() => setSelected(sessionId)}>
               {sessionId}
             </ChatItem>
           ))}
@@ -287,7 +290,6 @@ const Chatbot = () => {
                 if (e.key === 'Enter') handleSend();
               }}
             />
-
             <SendButton onClick={handleSend}>
               <FiSend size={24} />
             </SendButton>
