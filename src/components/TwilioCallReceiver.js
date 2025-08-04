@@ -161,8 +161,10 @@ const TwilioCallReceiver = () => {
             Authorization: `Bearer ${jwtToken}`,
           },
         });
+
         const accessToken = res.data.result.twilioAccessToken;
         const userId = res.data.result.userId;
+
         console.log("✅ Twilio 토큰 수신 완료:", twilioAccessToken);
         console.log("✅ userId:", userId);
 

@@ -25,7 +25,7 @@ const StyledBubble = styled.div`
 `;
 
 const Bubble = ({ size, top, right, left, floating = false }) => {
-  return <StyledBubble size={size} top={top} right={right} left={left} floating={floating} />;
+  return <StyledBubble size={size} top={top} right={right} left={left}  />;
 };
 
 export default Bubble;

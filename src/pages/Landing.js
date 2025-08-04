@@ -93,7 +93,7 @@ const InfoTitle = styled.h3`
 
 const InfoText1 = styled.p`
   font-size: 27px;
-  font-weight: bold;
+  // font-weight: bold;
   margin-bottom: 30px;
 `;
 
@@ -156,8 +156,8 @@ const StepIcon = styled.img`
 `;
 
 const StepText = styled.p`
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 26px;
+  width: 240px;
 `;
 
 const CTASection = styled.section`
@@ -255,19 +255,19 @@ const LandingPage = () => {
               strokeWidth="1"
               fill="transparent"
             />
-            <circle cx="200" cy="114" r="11" fill="#5C24AF" />
-            <circle cx="600" cy="488" r="11" fill="#5C24AF" />
-            <circle cx="1000" cy="114" r="11" fill="#5C24AF" />
-            <circle cx="1400" cy="488" r="11" fill="#5C24AF" />
+            <ellipse cx="200" cy="114" rx="7" ry="10" fill="#5C24AF" />
+            <ellipse cx="600" cy="488" rx="7" ry="10" fill="#5C24AF" />
+            <ellipse cx="1000" cy="114" rx="7" ry="10" fill="#5C24AF" />
+            <ellipse cx="1400" cy="488" rx="7" ry="10" fill="#5C24AF" />
           </StepCurve>
 
           <StepItem posX={12} posY={60}>
-            <StepIcon src={feat1} alt="실시간 욕설 감지" />
+            <StepIcon src={feat1} alt="실시간 욕설 감지" style={{ width: '150px', height: '105px' }}/>
             <StepText>실시간 욕설 감지<br />및 자동 음소거</StepText>
           </StepItem>
 
           <StepItem posX={37.5} posY={35}>
-            <StepIcon src={feat2} alt="RAG 챗봇" style={{ width: '120px', height: '120px' }} />
+            <StepIcon src={feat2} alt="RAG 챗봇" style={{ width: '200px', height: '120px' }} />
             <StepText>RAG 법률 챗봇으로<br />실시간 대응</StepText>
           </StepItem>
 
@@ -277,7 +277,7 @@ const LandingPage = () => {
           </StepItem>
 
           <StepItem posX={88} posY={35}>
-            <StepIcon src={feat4} alt="고객관리" style={{ width: '120px', height: '120px' }} />
+            <StepIcon src={feat4} alt="고객관리" style={{ width: '170px', height: '120px' }} />
             <StepText>효율적인 고객관리</StepText>
           </StepItem>
         </StepFlowContainer>
