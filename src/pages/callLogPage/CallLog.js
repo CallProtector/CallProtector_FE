@@ -1,44 +1,57 @@
 // import React, { useEffect, useState } from "react";
-// import { useLocation } from "react-router-dom";
+// import { useLocation, useNavigate } from "react-router-dom";
 // import { AiOutlineInfoCircle } from "react-icons/ai";
 // import "./CallLog.css";
-// import EndCallModal from "../../components/Modal/EndCallModal";
+// import { useWebSocket } from "../../contexts/WebSocketContext";
 
 // const CallLog = () => {
 //   const location = useLocation();
-//   console.log("location.state:", location.state);
-//   const warningCount = 3; // 백 연동 후 수정
+//   const navigate = useNavigate();
+//   const {
+//     sessionInfo,
+//     inboundLogs,
+//     outboundLogs,
+//     interimTranscript,
+//     totalAbuseCnt,
+//     disconnectWebSocket,
+//   } = useWebSocket();
 
-//   const [aiSummaryStatus, setAiSummaryStatus] = useState("waiting"); // "waiting" | "loading" | "done"
+//   const [aiSummaryStatus, setAiSummaryStatus] = useState("waiting");
+//   const [summaryData, setSummaryData] = useState({ request: "", change: [] });
+//   const [showAbuseOnly, setShowAbuseOnly] = useState(false);
 
-//   const summaryData = {
-//     request: "자동이체 → 신용카드 결제로 변경",
-//     change: [
-//       "기존 결제수단: 자동 이체",
-//       "신규 결제수단: 신용카드 (--****-3456)",
-//       "적용 시점: 다음 달 청구분부터",
-//     ],
+//   useEffect(() => {
+//     if (!location.state?.callAccepted) {
+//       console.warn("❗ 통화 상태 정보 없음 (state=null)");
+//       navigate("/main");
+//     } else {
+//       console.log("📞 통화중(통화 페이지 이동)");
+//       console.log("🧾 세션코드:", sessionInfo?.sessionCode);
+//     }
+//   }, [location.state, sessionInfo, navigate]);
+
+//   const handleEndCall = () => {
+//     disconnectWebSocket?.(); // 웹소켓 종료
+//     navigate("/main");
 //   };
 
 //   const handleStartSummary = () => {
 //     setAiSummaryStatus("loading");
-
-//     // 3초 뒤 요약 완료 시뮬레이션
 //     setTimeout(() => {
 //       setAiSummaryStatus("done");
+//       setSummaryData({
+//         request: "자동이체 → 신용카드 결제로 변경",
+//         change: [
+//           "기존 결제수단: 자동 이체",
+//           "신규 결제수단: 신용카드 (--****-3456)",
+//           "적용 시점: 다음 달 청구분부터",
+//         ],
+//       });
 //     }, 3000);
 //   };
 
-//   useEffect(() => {
-//     if (location.state?.callAccepted) {
-//       console.log("📞 통화중(통화 페이지 이동)");
-//     } else {
-//       console.log("❗통화 상태 정보 없음 (state=null)");
-//     }
-//   }, []);
-
-//   let callNumber = "20250701-0001";
-//   let callDate = "3.28 (금) 13:26";
+//   const callNumber = sessionInfo?.sessionCode || "세션 없음";
+//   const callDate = sessionInfo?.createdAt || "정보 없음";
 
 //   return (
 //     <div className="total">
@@ -51,22 +64,33 @@
 //         </div>
 
 //         <div className="right-info">
-//           <span className="warning-count">누적 경고: {warningCount}회</span>
-//           <div className="warning-bar multi-color">
+//           <span className="warning-count">누적 경고: {totalAbuseCnt}회</span>
+//           <div className="warning-bar">
 //             <div
-//               className={`bar-segment ${
-//                 warningCount >= 1 ? "fill-yellow" : ""
-//               }`}
-//             />
-//             <div
-//               className={`bar-segment ${
-//                 warningCount >= 2 ? "fill-orange" : ""
-//               }`}
-//             />
-//             <div
-//               className={`bar-segment ${warningCount >= 3 ? "fill-red" : ""}`}
-//             />
+//               className="bar-fill"
+//               style={{
+//                 width: `${(totalAbuseCnt / 3) * 100}%`,
+//                 backgroundColor:
+//                   totalAbuseCnt === 1
+//                     ? "#ffd700"
+//                     : totalAbuseCnt === 2
+//                     ? "#ff8c00"
+//                     : totalAbuseCnt >= 3
+//                     ? "#ff0000"
+//                     : "#f1eefc",
+//               }}
+//             ></div>
 //           </div>
+
+//           {totalAbuseCnt > 0 && (
+//             <div className="abuse-warning-toggle">
+//               <button onClick={() => setShowAbuseOnly((prev) => !prev)}>
+//                 {showAbuseOnly
+//                   ? "⚠️ 전체 보기"
+//                   : `⚠️ 부적절 발언 보기 (${totalAbuseCnt}/3)`}
+//               </button>
+//             </div>
+//           )}
 //         </div>
 //       </div>
 
@@ -88,37 +112,37 @@
 //           </div>
 
 //           <div className="conversation">
-//             <div className="line">
-//               <strong>상담원</strong>
-//               <p>
-//                 안녕하세요. 00카드 상담원 김덕우입니다. 무엇을 도와드릴까요?
-//               </p>
-//             </div>
-//             <div className="line">
-//               <strong>고객</strong>
-//               <p>
-//                 안녕하세요. 전화요금 결제수단을 변경하려고 하는데, 어떻게 하면
-//                 될까요?
-//                 <br />
-//                 지금은 자동이체로 등록되어 있는데, 신용카드 결제로 변경하고
-//                 싶어요.
-//               </p>
-//             </div>
-//             <div className="line">
-//               <strong>상담원</strong>
-//               <p>
-//                 네, 신용카드 결제로 변경 가능합니다. 몇 가지 확인이 필요한데요.
-//                 <br />
-//                 고객님의 본인 확인을 위해 등록된 휴대폰 번호와 생년월일을 말씀해
-//                 주시겠어요?
-//               </p>
-//             </div>
-//             <div className="line">
-//               <strong>고객</strong>
-//               <p className="warning-highlight">
-//                 상담자가 부적절한 발언을 함 (2/3)
-//               </p>
-//             </div>
+//             {["상담원", "고객"].map((role, i) => {
+//               const track = i === 0 ? "OUTBOUND" : "INBOUND";
+//               const logs = i === 0 ? outboundLogs : inboundLogs;
+//               const filtered = showAbuseOnly
+//                 ? logs.filter((l) => l.isAbuse)
+//                 : logs;
+
+//               return (
+//                 <React.Fragment key={role}>
+//                   {filtered.map((log, idx) => (
+//                     <div key={`${role}-${idx}`} className="line">
+//                       <strong>{role}</strong>
+//                       <p className={log.isAbuse ? "warning-highlight" : ""}>
+//                         {log.script}
+//                         {log.isAbuse &&
+//                           ` 🚫 (${log.abuseType || "부적절한 발언"})`}
+//                       </p>
+//                     </div>
+//                   ))}
+//                   {interimTranscript[track] && (
+//                     <div className="line interim-line" key={`${role}-interim`}>
+//                       <strong>{role}</strong>
+//                       <p className="interim-transcript">
+//                         {interimTranscript[track]}
+//                         <span style={{ opacity: 0.4 }}> (듣는 중...)</span>
+//                       </p>
+//                     </div>
+//                   )}
+//                 </React.Fragment>
+//               );
+//             })}
 //           </div>
 //         </div>
 
@@ -159,7 +183,9 @@
 //                     <div className="summary-section">
 //                       <strong>처리 결과</strong>
 //                       <ul>
-//                         <li>{summaryData.change}</li>
+//                         {summaryData.change.map((item, idx) => (
+//                           <li key={idx}>{item}</li>
+//                         ))}
 //                       </ul>
 //                     </div>
 //                   </div>
@@ -167,8 +193,11 @@
 //               </div>
 //             </div>
 //           </div>
+
 //           <div className="bottom-button">
-//             <button className="end-button">상담 종료하기</button>
+//             <button className="end-button" onClick={handleEndCall}>
+//               상담 종료하기
+//             </button>
 //           </div>
 //         </div>
 //       </div>
@@ -178,73 +207,42 @@
 
 // export default CallLog;
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import "./CallLog.css";
-import EndCallModal from "../../components/Modal/EndCallModal";
+import { useWebSocket } from "../../contexts/WebSocketContext";
 
 const CallLog = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const handleEndCall = () => {
-    navigate("/main"); // 메인 페이지 경로
-  };
-  const wsRef = useRef(null);
+  const {
+    sessionInfo,
+    inboundLogs,
+    outboundLogs,
+    interimTranscript,
+    totalAbuseCnt,
+    disconnectWebSocket,
+  } = useWebSocket();
+
   const [aiSummaryStatus, setAiSummaryStatus] = useState("waiting");
   const [summaryData, setSummaryData] = useState({ request: "", change: [] });
-  const [sessionInfo, setSessionInfo] = useState(null);
-  const [totalAbuseCnt, setTotalAbuseCnt] = useState(0);
-  const [inboundLogs, setInboundLogs] = useState([]);
-  const [outboundLogs, setOutboundLogs] = useState([]);
   const [showAbuseOnly, setShowAbuseOnly] = useState(false);
 
   useEffect(() => {
-    if (location.state?.callAccepted) {
-      console.log("📞 통화중(통화 페이지 이동)");
+    if (!location.state?.callAccepted) {
+      console.warn("❗ 통화 상태 정보 없음 (state=null)");
+      // navigate("/main"); 잠시 주석처리!!!
     } else {
-      console.log("❗통화 상태 정보 없음 (state=null)");
+      console.log("📞 통화중(통화 페이지 이동)");
+      console.log("🧾 세션코드:", sessionInfo?.sessionCode);
     }
+  }, [location.state, sessionInfo, navigate]);
 
-    const ws = new WebSocket("wss://callprotect.site/ws/stt?userId=1");
-    wsRef.current = ws;
-
-    ws.onopen = () => console.log("✅ WebSocket 연결됨");
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        if (data.type === "sessionInfo") {
-          setSessionInfo({
-            sessionCode: data.sessionCode,
-            createdAt: data.createdAt,
-          });
-          setTotalAbuseCnt(data.totalAbuseCnt);
-        } else if (data.type === "totalAbuseCntUpdate") {
-          setTotalAbuseCnt(data.totalAbuseCnt);
-        } else if (data.type === "stt") {
-          const { track, script, isFinal, isAbuse, abuseType } = data.payload;
-          const logItem = { script, isFinal, isAbuse, abuseType };
-
-          if (track === "INBOUND") {
-            setInboundLogs((prev) => [...prev, logItem]);
-          } else {
-            setOutboundLogs((prev) => [...prev, logItem]);
-          }
-        }
-      } catch (err) {
-        console.error("❌ 메시지 처리 에러:", err);
-      }
-    };
-
-    ws.onerror = (e) => console.error("❌ WebSocket 오류", e);
-    ws.onclose = () => console.log("🔌 WebSocket 연결 종료");
-
-    return () => {
-      ws.close();
-    };
-  }, []);
+  const handleEndCall = () => {
+    disconnectWebSocket?.(); // 웹소켓 종료
+    navigate("/main");
+  };
 
   const handleStartSummary = () => {
     setAiSummaryStatus("loading");
@@ -261,8 +259,8 @@ const CallLog = () => {
     }, 3000);
   };
 
-  const callNumber = sessionInfo?.sessionCode || "20250701-0001";
-  const callDate = sessionInfo?.createdAt || "3.28 (금) 13:26";
+  const callNumber = sessionInfo?.sessionCode || "세션 없음";
+  const callDate = sessionInfo?.createdAt || "정보 없음";
 
   return (
     <div className="total">
@@ -345,6 +343,14 @@ const CallLog = () => {
         <div className="right-part">
           <div className="box3">
             <h3 className="section-title">AI 상담요약</h3>
+            {/* 버전 선택 */}
+            <div className="summary-version">
+              <span className="version-label">제공 버전</span>
+              <select className="version-select">
+                <option value="v1">v1 - 빠르고 간단하게 핵심만 요약</option>
+                <option value="v2">v2 - 상세한 정보까지 포함한 요약</option>
+              </select>
+            </div>
             <div className="box3-body">
               <div className="summary-content">
                 {aiSummaryStatus === "waiting" && (
@@ -353,7 +359,7 @@ const CallLog = () => {
                       className="summary-button"
                       onClick={handleStartSummary}
                     >
-                      📋 상담 요약하기
+                      상담 요약하기
                     </button>
                     <p className="summary-guide">
                       통화가 종료되면 버튼을 눌러 보세요.
@@ -379,7 +385,9 @@ const CallLog = () => {
                     <div className="summary-section">
                       <strong>처리 결과</strong>
                       <ul>
-                        <li>{summaryData.change}</li>
+                        {summaryData.change.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
                       </ul>
                     </div>
                   </div>
