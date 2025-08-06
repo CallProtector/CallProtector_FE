@@ -18,8 +18,8 @@ const TwilioCallReceiver = () => {
 
     const initTwilio = async () => {
       try {
-        // const res = await API.get("/api/token");
-        const res = await axios.get(`http://localhost:8080/api/token`);
+        const res = await API.get("/api/token");
+        // const res = await axios.get(`http://localhost:8080/api/token`);
 
         const data = res.data;
         const accessToken = data.result.twilioAccessToken;

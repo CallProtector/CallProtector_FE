@@ -191,11 +191,33 @@ const Chatbot = () => {
   const [tempSessionId, setTempSessionId] = useState(null); // 임시 세션 ID
 
   // 새로운 채팅 클릭 시: selected만 지정 (목록에 추가하지 않음)
-  const startNewChat = () => {
-    const newId = `chat-${Date.now()}`;
-    setTempSessionId(newId);
-    setSelected(newId);
-    setInputText('');
+  const startNewChat = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/chat-session', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      console.log("토큰:", localStorage.getItem("accessToken"));
+
+      const data = await res.json();
+      console.log('[✅ 세션 생성 응답]', data);
+      if (res.ok && data.isSuccess && data.result?.sessionId) {
+        const sessionId = data.result.sessionId;
+
+        setSelected(sessionId);
+        setGeneralChatSessions((prev) => [...prev, sessionId]);
+        setGeneralChatMap((prev) => ({ ...prev, [sessionId]: [] }));
+        setInputText('');
+      } else {
+        alert('세션 생성 실패: ' + data.message);
+      }
+    } catch (error) {
+      console.error('세션 생성 중 에러:', error);
+      alert('서버 오류로 세션을 생성할 수 없습니다.');
+    }
   };
 
   // 메시지 전송 시: 세션 ID가 목록에 없으면 새로 추가
