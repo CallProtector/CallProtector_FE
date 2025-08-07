@@ -239,11 +239,11 @@ const Chatbot = () => {
     setTempSessionId(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem("accessToken");
       const encoded = encodeURIComponent(text);
       const url = `http://localhost:8080/api/chat/stream?sessionId=${sessionId}&question=${encoded}&token=${token}`;
-      const eventSource = new EventSource(url);
 
+      const eventSource = new EventSource(url);
       let buffer = '';
 
       const appendBotMessage = (chunk) => {
@@ -277,13 +277,12 @@ const Chatbot = () => {
             const jsonString = buffer.substring(jsonStart, jsonEnd).trim();
             const parsed = JSON.parse(jsonString);
             if (parsed.answer) {
-              appendBotMessage(buffer + '\n' + parsed.answer);
+              appendBotMessage('\n' + parsed.answer);
             }
           } catch (e) {
             console.warn('JSON 파싱 실패:', e);
             appendBotMessage('[⚠️ 응답 파싱 실패]');
           }
-
           eventSource.close();
           return;
         }
@@ -291,18 +290,18 @@ const Chatbot = () => {
         if (chunk.startsWith('[JSON]')) {
           buffer = chunk.replace('[JSON]', '').trim();
         } else {
-          // 생략 가능: 실시간 토큰이 있다면 표시
+          // 필요한 경우: 실시간 토큰 출력
           // appendBotMessage(chunk);
         }
       };
 
       eventSource.onerror = (e) => {
         console.error('⛔ SSE 연결 오류', e);
-        appendBotMessage('[⛔ 연결 오류]');
+        appendBotMessage('[⛔ 연결 실패]');
         eventSource.close();
       };
     } catch (err) {
-      console.error('스트리밍 중 오류:', err);
+      console.error('스트리밍 처리 중 오류:', err);
       alert('메시지를 가져오는 중 오류가 발생했습니다.');
     }
   };
