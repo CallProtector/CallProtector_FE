@@ -173,14 +173,13 @@ const SendButton = styled.button`
 const Chatbot = () => {
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
-
   const [generalChatSessions, setGeneralChatSessions] = useState([]);
   const [consultChatSessions, setConsultChatSessions] = useState([]);
   const [generalChatMap, setGeneralChatMap] = useState({});
   const [consultChatMap, setConsultChatMap] = useState({});
   const [selected, setSelected] = useState(null);
-
   const [inputText, setInputText] = useState('');
+  const [tempSessionId, setTempSessionId] = useState(null);
 
   const currentSessions = activeTab === '일반' ? generalChatSessions : consultChatSessions;
   const setCurrentSessions = activeTab === '일반' ? setGeneralChatSessions : setConsultChatSessions;
@@ -188,9 +187,6 @@ const Chatbot = () => {
   const setCurrentChatMap = activeTab === '일반' ? setGeneralChatMap : setConsultChatMap;
   const messages = selected ? currentChatMap[selected] || [] : [];
 
-  const [tempSessionId, setTempSessionId] = useState(null); // 임시 세션 ID
-
-  // 새로운 채팅 클릭 시: selected만 지정 (목록에 추가하지 않음)
   const startNewChat = async () => {
     try {
       const res = await fetch('http://localhost:8080/api/chat-session', {
@@ -200,13 +196,9 @@ const Chatbot = () => {
           'Content-Type': 'application/json',
         },
       });
-      console.log("토큰:", localStorage.getItem("accessToken"));
-
       const data = await res.json();
-      console.log('[✅ 세션 생성 응답]', data);
       if (res.ok && data.isSuccess && data.result?.sessionId) {
         const sessionId = data.result.sessionId;
-
         setSelected(sessionId);
         setGeneralChatSessions((prev) => [...prev, sessionId]);
         setGeneralChatMap((prev) => ({ ...prev, [sessionId]: [] }));
@@ -215,44 +207,106 @@ const Chatbot = () => {
         alert('세션 생성 실패: ' + data.message);
       }
     } catch (error) {
-      console.error('세션 생성 중 에러:', error);
       alert('서버 오류로 세션을 생성할 수 없습니다.');
     }
   };
 
-  // 메시지 전송 시: 세션 ID가 목록에 없으면 새로 추가
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = inputText.trim();
     if (!text) return;
 
     let sessionId = selected;
-
-    // 선택된 세션이 없을 경우, 임시 세션 ID 사용
     if (!sessionId) {
       sessionId = `chat-${Date.now()}`;
       setTempSessionId(sessionId);
       setSelected(sessionId);
     }
 
-    const newMessage = { fromUser: true, text };
-
+    const userMessage = { fromUser: true, text };
     const chatMap = activeTab === '일반' ? generalChatMap : consultChatMap;
 
-    // 세션 목록에 없는 경우에만 세션 추가
     if (!chatMap[sessionId]) {
       setCurrentSessions((prev) => [...prev, sessionId]);
-      setCurrentChatMap((prev) => ({ ...prev, [sessionId]: [newMessage] }));
+      setCurrentChatMap((prev) => ({ ...prev, [sessionId]: [userMessage] }));
     } else {
       setCurrentChatMap((prev) => ({
         ...prev,
-        [sessionId]: [...prev[sessionId], newMessage],
+        [sessionId]: [...prev[sessionId], userMessage],
       }));
     }
 
-    setSelected(sessionId);
     setInputText('');
     setTempSessionId(null);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const encoded = encodeURIComponent(text);
+      const url = `http://localhost:8080/api/chat/stream?sessionId=${sessionId}&question=${encoded}&token=${token}`;
+      const eventSource = new EventSource(url);
+
+      let buffer = '';
+
+      const appendBotMessage = (chunk) => {
+        setCurrentChatMap((prev) => {
+          const existing = prev[sessionId] || [];
+          const lastMsg = existing[existing.length - 1];
+          if (lastMsg && !lastMsg.fromUser) {
+            const updated = [...existing];
+            updated[updated.length - 1] = {
+              ...lastMsg,
+              text: lastMsg.text + chunk,
+            };
+            return { ...prev, [sessionId]: updated };
+          } else {
+            return {
+              ...prev,
+              [sessionId]: [...existing, { fromUser: false, text: chunk }],
+            };
+          }
+        });
+      };
+
+      eventSource.onmessage = (event) => {
+        const chunk = event.data;
+
+        if (chunk === '[END]') {
+          try {
+            buffer = buffer.trim();
+            const jsonStart = buffer.indexOf('{');
+            const jsonEnd = buffer.lastIndexOf('}') + 1;
+            const jsonString = buffer.substring(jsonStart, jsonEnd).trim();
+            const parsed = JSON.parse(jsonString);
+            if (parsed.answer) {
+              appendBotMessage(buffer + '\n' + parsed.answer);
+            }
+          } catch (e) {
+            console.warn('JSON 파싱 실패:', e);
+            appendBotMessage('[⚠️ 응답 파싱 실패]');
+          }
+
+          eventSource.close();
+          return;
+        }
+
+        if (chunk.startsWith('[JSON]')) {
+          buffer = chunk.replace('[JSON]', '').trim();
+        } else {
+          // 생략 가능: 실시간 토큰이 있다면 표시
+          // appendBotMessage(chunk);
+        }
+      };
+
+      eventSource.onerror = (e) => {
+        console.error('⛔ SSE 연결 오류', e);
+        appendBotMessage('[⛔ 연결 오류]');
+        eventSource.close();
+      };
+    } catch (err) {
+      console.error('스트리밍 중 오류:', err);
+      alert('메시지를 가져오는 중 오류가 발생했습니다.');
+    }
   };
+
 
   useEffect(() => {
     setSelected(null);
