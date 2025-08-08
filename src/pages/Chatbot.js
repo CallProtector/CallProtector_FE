@@ -266,34 +266,43 @@ const Chatbot = () => {
         });
       };
 
-      eventSource.onmessage = (event) => {
-        const chunk = event.data;
+     eventSource.onmessage = (event) => {
+  const chunk = event.data;
 
-        if (chunk === '[END]') {
-          try {
-            buffer = buffer.trim();
-            const jsonStart = buffer.indexOf('{');
-            const jsonEnd = buffer.lastIndexOf('}') + 1;
-            const jsonString = buffer.substring(jsonStart, jsonEnd).trim();
-            const parsed = JSON.parse(jsonString);
-            if (parsed.answer) {
-              appendBotMessage('\n' + parsed.answer);
-            }
-          } catch (e) {
-            console.warn('JSON 파싱 실패:', e);
-            appendBotMessage('[⚠️ 응답 파싱 실패]');
-          }
-          eventSource.close();
-          return;
+  if (chunk === '[END]') {
+    try {
+      buffer = buffer.trim();
+      const jsonStart = buffer.indexOf('{');
+      const jsonEnd = buffer.lastIndexOf('}') + 1;
+      const jsonString = buffer.substring(jsonStart, jsonEnd).trim();
+      const parsed = JSON.parse(jsonString);
+
+      if (parsed.answer) {
+        let formatted = `${parsed.answer}`;
+
+        if (parsed.sourcePages?.length > 0) {
+          formatted += '\n\n 👩⚖️법적으로 이렇게 대응할 수 있어요! \n';
+          formatted += parsed.sourcePages.map(sp =>
+            `• 유형: ${sp.유형}\n• 관련법률: ${sp.관련법률 || '없음'}`
+          ).join('\n');
         }
 
-        if (chunk.startsWith('[JSON]')) {
-          buffer = chunk.replace('[JSON]', '').trim();
-        } else {
-          // 필요한 경우: 실시간 토큰 출력
-          // appendBotMessage(chunk);
-        }
-      };
+        appendBotMessage(formatted);
+      }
+    } catch (e) {
+      console.warn('JSON 파싱 실패:', e);
+      appendBotMessage('[⚠️ 응답 파싱 실패]');
+    }
+
+    eventSource.close();
+    return;
+  }
+
+  if (chunk.startsWith('[JSON]')) {
+    buffer = chunk.replace('[JSON]', '').trim();
+  }
+};
+
 
       eventSource.onerror = (e) => {
         console.error('⛔ SSE 연결 오류', e);
