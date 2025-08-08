@@ -62,7 +62,6 @@ const SidebarActionButton = styled.button`
 
 const ChatList = styled.div`
   margin-top: 16px;
-  margin-top: 16px;
   flex: 1;              
   overflow-y: auto;    
   padding-right: 6px;  
@@ -140,8 +139,10 @@ const EmptyMessage = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 30px;
+  font-size: 23px;
   color: #777;
+  text-align: center;
+  padding: 0 24px;
 `;
 
 const InputArea = styled.div`
@@ -181,7 +182,7 @@ const Chatbot = () => {
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
 
-  // ✅ 일반 세션: [{sessionId, title, startTime}]
+  // 일반 세션: [{sessionId, title, startTime}]
   const [generalChatSessions, setGeneralChatSessions] = useState([]);
   const [consultChatSessions, setConsultChatSessions] = useState([]);
   const [generalChatMap, setGeneralChatMap] = useState({});
@@ -199,7 +200,7 @@ const Chatbot = () => {
       ? generalChatSessions.find(s => String(s.sessionId) === String(selected))
       : null;
 
-  // 👉 Bot 메시지 포맷터 (answer + sourcePages)
+  // Bot 메시지 포맷터 (answer + sourcePages)
   const formatBotMessage = (answer, sourcePages) => {
     let formatted = `${answer || ''}`;
     if (Array.isArray(sourcePages) && sourcePages.length > 0) {
@@ -211,7 +212,7 @@ const Chatbot = () => {
     return formatted.trim();
   };
 
-  // ✅ 일반 세션 목록 로드
+  // 일반 세션 목록 로드 (자동 선택 제거)
   const loadGeneralSessions = async () => {
     try {
       const res = await fetch('http://localhost:8080/api/chat-session/list', {
@@ -235,8 +236,6 @@ const Chatbot = () => {
           return next;
         });
 
-        // 기본 선택
-        if (!selected && list.length > 0) setSelected(list[0].sessionId);
       } else {
         console.warn('세션 목록 조회 실패:', data?.message);
       }
@@ -245,7 +244,7 @@ const Chatbot = () => {
     }
   };
 
-  // 👉 선택된 세션의 로그 로드
+  // 선택된 세션의 로그 로드
   const loadChatLogs = async (sessionId) => {
     try {
       const res = await fetch(`http://localhost:8080/api/chat-log/session/${sessionId}`, {
@@ -255,12 +254,10 @@ const Chatbot = () => {
       const data = await res.json();
 
       if (res.ok && data.isSuccess && Array.isArray(data.result)) {
-        // createdAt 오름차순 정렬(옛날 → 최신)
         const logs = [...data.result].sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
 
-        // UI 메시지 형태로 변환: [user, bot, user, bot...]
         const msgList = [];
         logs.forEach(item => {
           if (item.question) {
@@ -281,10 +278,38 @@ const Chatbot = () => {
     }
   };
 
+  // ✅ 새 세션 생성 보장 (선택 없을 때 호출)
+  const ensureSessionId = async () => {
+    if (selected && /^\d+$/.test(String(selected))) return selected;
+
+    const res = await fetch('http://localhost:8080/api/chat-session', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.isSuccess || !data.result?.sessionId) {
+      throw new Error(data?.message || '세션 생성 실패');
+    }
+    const newId = data.result.sessionId;
+
+    // 목록 상단에 추가
+    setGeneralChatSessions(prev => [
+      { sessionId: newId, title: null, startTime: new Date().toISOString() },
+      ...prev,
+    ]);
+
+    setGeneralChatMap(prev => ({ ...prev, [newId]: [] }));
+    setSelected(newId);
+
+    return newId;
+  };
+
   // 첫 진입
   useEffect(() => {
     loadGeneralSessions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 탭 전환
@@ -294,17 +319,15 @@ const Chatbot = () => {
     } else {
       setSelected(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // ✅ 세션 선택 시 해당 로그 로드(일반 탭만, 아직 메시지 없으면)
+  // 세션 선택 시 해당 로그 로드(일반 탭만, 아직 메시지 없으면)
   useEffect(() => {
     if (activeTab !== '일반') return;
     if (!selected) return;
 
     const alreadyLoaded = Array.isArray(generalChatMap[selected]) && generalChatMap[selected].length > 0;
     if (!alreadyLoaded) {
-      // 숫자형 sessionId만 백엔드에서 조회(임시 chat-... 제외)
       const isNumeric = String(selected).match(/^\d+$/);
       if (isNumeric) loadChatLogs(selected);
     }
@@ -324,7 +347,6 @@ const Chatbot = () => {
         const sessionId = data.result.sessionId;
         setSelected(sessionId);
 
-        // 새 세션을 목록 맨 위로
         setGeneralChatSessions(prev => [
           { sessionId, title: null, startTime: new Date().toISOString() },
           ...prev,
@@ -344,25 +366,12 @@ const Chatbot = () => {
     const text = inputText.trim();
     if (!text) return;
 
-    let sessionId = selected;
-    if (!sessionId) {
-      sessionId = `chat-${Date.now()}`;
-      setTempSessionId(sessionId);
-      setSelected(sessionId);
-    }
+    const sessionId = await ensureSessionId();
 
     const userMessage = { fromUser: true, text };
     const chatMap = activeTab === '일반' ? generalChatMap : consultChatMap;
 
     if (!chatMap[sessionId]) {
-      if (activeTab === '일반') {
-        setGeneralChatSessions(prev => [
-          { sessionId, title: null, startTime: new Date().toISOString() },
-          ...prev,
-        ]);
-      } else {
-        setConsultChatSessions(prev => [...prev, sessionId]);
-      }
       setCurrentChatMap(prev => ({ ...prev, [sessionId]: [userMessage] }));
     } else {
       setCurrentChatMap(prev => ({
@@ -414,7 +423,8 @@ const Chatbot = () => {
             const parsed = JSON.parse(jsonString);
 
             if (parsed.answer) {
-              appendBotMessage(formatBotMessage(parsed.answer, parsed.sourcePages));
+              const formatted = formatBotMessage(parsed.answer, parsed.sourcePages);
+              appendBotMessage(formatted);
             }
           } catch (e) {
             console.warn('JSON 파싱 실패:', e);
@@ -494,38 +504,44 @@ const Chatbot = () => {
       </Sidebar>
 
       <ChatArea>
-        {selected && messages.length > 0 && (
-          <ChatHeader>
-            <ChatTitle>
-              {activeTab === '일반'
-                ? (selectedSessionMeta?.title || `새 대화 #${selected}`)
-                : selected}
-              <CallLogButton
-                style={{
-                  visibility: activeTab === '상담별' ? 'visible' : 'hidden',
-                }}
-              >
-                통화 내용 보기
-              </CallLogButton>
-            </ChatTitle>
-            <ChatDate>
-              {activeTab === '일반' && selectedSessionMeta?.startTime
-                ? new Date(selectedSessionMeta.startTime).toLocaleString()
-                : ' '}
-            </ChatDate>
-          </ChatHeader>
+        {selected && messages.length > 0 ? (
+          <>
+            <ChatHeader>
+              <ChatTitle>
+                {activeTab === '일반'
+                  ? (selectedSessionMeta?.title || `새 대화 #${selected}`)
+                  : selected}
+                <CallLogButton
+                  style={{
+                    visibility: activeTab === '상담별' ? 'visible' : 'hidden',
+                  }}
+                >
+                  통화 내용 보기
+                </CallLogButton>
+              </ChatTitle>
+              <ChatDate>
+                {activeTab === '일반' && selectedSessionMeta?.startTime
+                  ? new Date(selectedSessionMeta.startTime).toLocaleString()
+                  : ' '}
+              </ChatDate>
+            </ChatHeader>
+            <ChatBody>
+              {messages.map((msg, idx) => (
+                <ChatBubble key={idx} fromUser={msg.fromUser}>
+                  {msg.text}
+                </ChatBubble>
+              ))}
+            </ChatBody>
+          </>
+        ) : (
+          <ChatBody>
+            <EmptyMessage>
+              새로운 채팅을 시작해보세요. 
+              <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
+              아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
+            </EmptyMessage>
+          </ChatBody>
         )}
-        <ChatBody>
-          {messages.length === 0 ? (
-            <EmptyMessage>상담 중 불편한 상황이 발생하였나요?</EmptyMessage>
-          ) : (
-            messages.map((msg, idx) => (
-              <ChatBubble key={idx} fromUser={msg.fromUser}>
-                {msg.text}
-              </ChatBubble>
-            ))
-          )}
-        </ChatBody>
 
         <InputArea>
           <InputWrapper>
