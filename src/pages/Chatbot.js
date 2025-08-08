@@ -333,34 +333,19 @@ const Chatbot = () => {
     }
   }, [selected, activeTab, generalChatMap]);
 
-  const startNewChat = async () => {
-    try {
-      const res = await fetch('http://localhost:8080/api/chat-session', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = await res.json();
-      if (res.ok && data.isSuccess && data.result?.sessionId) {
-        const sessionId = data.result.sessionId;
-        setSelected(sessionId);
+  const startNewChat = () => {
+  // 현재 선택된 세션의 메시지가 없거나 선택이 없는 상태라면, 그냥 빈 화면 유지
+  const currMsgs = selected ? (currentChatMap[selected] || []) : [];
+  if (!selected || currMsgs.length === 0) {
+    setInputText('');
+    setSelected(null);
+    return;
+  }
 
-        setGeneralChatSessions(prev => [
-          { sessionId, title: null, startTime: new Date().toISOString() },
-          ...prev,
-        ]);
-
-        setGeneralChatMap(prev => ({ ...prev, [sessionId]: [] }));
-        setInputText('');
-      } else {
-        alert('세션 생성 실패: ' + data.message);
-      }
-    } catch (error) {
-      alert('서버 오류로 세션을 생성할 수 없습니다.');
-    }
-  };
+  // 다른 대화를 보다가 누르면 선택만 해제해서 새 채팅 화면으로 전환
+  setInputText('');
+  setSelected(null);
+};
 
   const handleSend = async () => {
     const text = inputText.trim();
