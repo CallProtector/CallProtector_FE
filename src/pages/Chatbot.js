@@ -181,9 +181,9 @@ const Chatbot = () => {
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
 
-  // ✅ 이제 일반 세션은 객체 배열로 관리 [{sessionId, title, startTime}]
+  // ✅ 일반 세션: [{sessionId, title, startTime}]
   const [generalChatSessions, setGeneralChatSessions] = useState([]);
-  const [consultChatSessions, setConsultChatSessions] = useState([]); // 그대로
+  const [consultChatSessions, setConsultChatSessions] = useState([]);
   const [generalChatMap, setGeneralChatMap] = useState({});
   const [consultChatMap, setConsultChatMap] = useState({});
   const [selected, setSelected] = useState(null);
@@ -199,6 +199,19 @@ const Chatbot = () => {
       ? generalChatSessions.find(s => String(s.sessionId) === String(selected))
       : null;
 
+  // 👉 Bot 메시지 포맷터 (answer + sourcePages)
+  const formatBotMessage = (answer, sourcePages) => {
+    let formatted = `${answer || ''}`;
+    if (Array.isArray(sourcePages) && sourcePages.length > 0) {
+      formatted += '\n\n 👩⚖️법적으로 이렇게 대응할 수 있어요! \n';
+      formatted += sourcePages
+        .map(sp => `• 유형: ${sp?.유형}\n• 관련법률: ${sp?.관련법률 || '없음'}`)
+        .join('\n');
+    }
+    return formatted.trim();
+  };
+
+  // ✅ 일반 세션 목록 로드
   const loadGeneralSessions = async () => {
     try {
       const res = await fetch('http://localhost:8080/api/chat-session/list', {
@@ -206,7 +219,6 @@ const Chatbot = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       });
       const data = await res.json();
-
 
       if (res.ok && data.isSuccess && Array.isArray(data.result)) {
         const list = [...data.result].sort(
@@ -233,17 +245,70 @@ const Chatbot = () => {
     }
   };
 
+  // 👉 선택된 세션의 로그 로드
+  const loadChatLogs = async (sessionId) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/chat-log/session/${sessionId}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+      });
+      const data = await res.json();
+
+      if (res.ok && data.isSuccess && Array.isArray(data.result)) {
+        // createdAt 오름차순 정렬(옛날 → 최신)
+        const logs = [...data.result].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+
+        // UI 메시지 형태로 변환: [user, bot, user, bot...]
+        const msgList = [];
+        logs.forEach(item => {
+          if (item.question) {
+            msgList.push({ fromUser: true, text: item.question });
+          }
+          msgList.push({
+            fromUser: false,
+            text: formatBotMessage(item.answer, item.sourcePages),
+          });
+        });
+
+        setGeneralChatMap(prev => ({ ...prev, [sessionId]: msgList }));
+      } else {
+        console.warn('대화 로그 조회 실패:', data?.message);
+      }
+    } catch (e) {
+      console.error('대화 로그 호출 오류:', e);
+    }
+  };
+
+  // 첫 진입
   useEffect(() => {
     loadGeneralSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 탭 전환
   useEffect(() => {
     if (activeTab === '일반') {
       loadGeneralSessions();
     } else {
       setSelected(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  // ✅ 세션 선택 시 해당 로그 로드(일반 탭만, 아직 메시지 없으면)
+  useEffect(() => {
+    if (activeTab !== '일반') return;
+    if (!selected) return;
+
+    const alreadyLoaded = Array.isArray(generalChatMap[selected]) && generalChatMap[selected].length > 0;
+    if (!alreadyLoaded) {
+      // 숫자형 sessionId만 백엔드에서 조회(임시 chat-... 제외)
+      const isNumeric = String(selected).match(/^\d+$/);
+      if (isNumeric) loadChatLogs(selected);
+    }
+  }, [selected, activeTab, generalChatMap]);
 
   const startNewChat = async () => {
     try {
@@ -259,7 +324,7 @@ const Chatbot = () => {
         const sessionId = data.result.sessionId;
         setSelected(sessionId);
 
-        // ✅ 새 세션을 목록 맨 위로 (제목 없음, 현재 시각)
+        // 새 세션을 목록 맨 위로
         setGeneralChatSessions(prev => [
           { sessionId, title: null, startTime: new Date().toISOString() },
           ...prev,
@@ -291,7 +356,6 @@ const Chatbot = () => {
 
     if (!chatMap[sessionId]) {
       if (activeTab === '일반') {
-        // 일반 탭에서 임시 세션이 생겼다면 목록에도 보여주기
         setGeneralChatSessions(prev => [
           { sessionId, title: null, startTime: new Date().toISOString() },
           ...prev,
@@ -350,19 +414,7 @@ const Chatbot = () => {
             const parsed = JSON.parse(jsonString);
 
             if (parsed.answer) {
-              let formatted = `${parsed.answer}`;
-
-              if (parsed.sourcePages?.length > 0) {
-                formatted += '\n\n 👩⚖️법적으로 이렇게 대응할 수 있어요! \n';
-                formatted += parsed.sourcePages
-                  .map(
-                    sp =>
-                      `• 유형: ${sp.유형}\n• 관련법률: ${sp.관련법률 || '없음'}`
-                  )
-                  .join('\n');
-              }
-
-              appendBotMessage(formatted);
+              appendBotMessage(formatBotMessage(parsed.answer, parsed.sourcePages));
             }
           } catch (e) {
             console.warn('JSON 파싱 실패:', e);
@@ -416,28 +468,28 @@ const Chatbot = () => {
         <ChatList>
           {activeTab === '일반'
             ? generalChatSessions.map(({ sessionId, title, startTime }) => (
-              <ChatItem
-                key={sessionId}
-                selected={String(selected) === String(sessionId)}
-                onClick={() => setSelected(sessionId)}
-              >
-                <div style={{ fontWeight: 600 }}>
-                  {title || `새 대화 #${sessionId}`}
-                </div>
-                <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                  {new Date(startTime).toLocaleString()}
-                </div>
-              </ChatItem>
-            ))
+                <ChatItem
+                  key={sessionId}
+                  selected={String(selected) === String(sessionId)}
+                  onClick={() => setSelected(sessionId)}
+                >
+                  <div style={{ fontWeight: 600 }}>
+                    {title || `새 대화 #${sessionId}`}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                    {new Date(startTime).toLocaleString()}
+                  </div>
+                </ChatItem>
+              ))
             : consultChatSessions.map(sessionId => (
-              <ChatItem
-                key={sessionId}
-                selected={String(selected) === String(sessionId)}
-                onClick={() => setSelected(sessionId)}
-              >
-                {sessionId}
-              </ChatItem>
-            ))}
+                <ChatItem
+                  key={sessionId}
+                  selected={String(selected) === String(sessionId)}
+                  onClick={() => setSelected(sessionId)}
+                >
+                  {sessionId}
+                </ChatItem>
+              ))}
         </ChatList>
       </Sidebar>
 
