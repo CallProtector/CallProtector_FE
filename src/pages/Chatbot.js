@@ -16,12 +16,14 @@ const Sidebar = styled.div`
   padding: 0 20px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 `;
 
 const Tabs = styled.div`
   display: flex;
   margin-top: 20px;
   border-bottom: 1px solid #ccc;
+  flex-shrink: 0; 
 `;
 
 const Tab = styled.button`
@@ -51,6 +53,7 @@ const SidebarActionButton = styled.button`
   gap: 8px;
   transition: background 0.2s;
   border-bottom: 1px solid #efefef;
+  flex-shrink: 0;
 
   &:hover {
     background-color: #efefef;
@@ -59,6 +62,10 @@ const SidebarActionButton = styled.button`
 
 const ChatList = styled.div`
   margin-top: 16px;
+  margin-top: 16px;
+  flex: 1;              
+  overflow-y: auto;    
+  padding-right: 6px;  
 `;
 
 const ChatItem = styled.div`
@@ -199,7 +206,7 @@ const Chatbot = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       });
       const data = await res.json();
-    
+
 
       if (res.ok && data.isSuccess && Array.isArray(data.result)) {
         const list = [...data.result].sort(
@@ -409,28 +416,28 @@ const Chatbot = () => {
         <ChatList>
           {activeTab === '일반'
             ? generalChatSessions.map(({ sessionId, title, startTime }) => (
-                <ChatItem
-                  key={sessionId}
-                  selected={String(selected) === String(sessionId)}
-                  onClick={() => setSelected(sessionId)}
-                >
-                  <div style={{ fontWeight: 600 }}>
-                    {title || `새 대화 #${sessionId}`}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                    {new Date(startTime).toLocaleString()}
-                  </div>
-                </ChatItem>
-              ))
+              <ChatItem
+                key={sessionId}
+                selected={String(selected) === String(sessionId)}
+                onClick={() => setSelected(sessionId)}
+              >
+                <div style={{ fontWeight: 600 }}>
+                  {title || `새 대화 #${sessionId}`}
+                </div>
+                <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                  {new Date(startTime).toLocaleString()}
+                </div>
+              </ChatItem>
+            ))
             : consultChatSessions.map(sessionId => (
-                <ChatItem
-                  key={sessionId}
-                  selected={String(selected) === String(sessionId)}
-                  onClick={() => setSelected(sessionId)}
-                >
-                  {sessionId}
-                </ChatItem>
-              ))}
+              <ChatItem
+                key={sessionId}
+                selected={String(selected) === String(sessionId)}
+                onClick={() => setSelected(sessionId)}
+              >
+                {sessionId}
+              </ChatItem>
+            ))}
         </ChatList>
       </Sidebar>
 
