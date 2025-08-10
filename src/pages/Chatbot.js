@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiSend } from 'react-icons/fi';
+import { FiSend, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { FaPlus } from 'react-icons/fa';
 import ChatListModal from '../components/Modal/ChatListModal';
 
@@ -13,7 +13,7 @@ const Container = styled.div`
 const Sidebar = styled.div`
   width: 300px;
   border-right: 1px solid #ddd;
-  padding: 0 20px;
+  padding: 0 6px 0 20px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -29,7 +29,7 @@ const Tabs = styled.div`
 const Tab = styled.button`
   flex: 1;
   padding: 12px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   border-radius: 13px 13px 0 0;
   background: ${({ active }) => (active ? '#fff' : 'transparent')};
@@ -42,7 +42,7 @@ const Tab = styled.button`
 const SidebarActionButton = styled.button`
   margin-top: 16px;
   padding: 12px;
-  font-size: 17px;
+  font-size: 19px;
   background-color: #F3F6FE;
   border: none;
   border-radius: 8px;
@@ -60,11 +60,55 @@ const SidebarActionButton = styled.button`
   }
 `;
 
+const Section = styled.div`
+  margin-top: 16px;
+`;
+
+const SectionHeader = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  padding: 10px 6px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #F3F6FE;
+`;
+
+const SectionBody = styled.div`
+  margin-top: 8px;
+`;
+
+const Chevron = ({ open }) =>
+  open ? <FiChevronDown size={18} /> : <FiChevronRight size={18} />;
+
 const ChatList = styled.div`
   margin-top: 16px;
-  flex: 1;              
-  overflow-y: auto;    
-  padding-right: 6px;  
+  flex: 1;
+  overflow-y: scroll;
+  padding-right: 6px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.15); 
+    border-radius: 4px;
+  }
+
+
 `;
 
 const ChatItem = styled.div`
@@ -73,7 +117,7 @@ const ChatItem = styled.div`
   background-color: ${({ selected }) => (selected ? '#eaeaea' : '#fff')};
   border-radius: 4px;
   cursor: pointer;
-  font-size: 17px;
+  font-size: 16px;
   transition: background 0.2s;
   &:hover {
     background-color: #efefef;
@@ -90,7 +134,7 @@ const ChatArea = styled.div`
 const ChatHeader = styled.div`
   padding: 30px 40px 10px 40px;
   border-bottom: 1px solid #ddd;
-  font-size: 24px;
+  font-size: 25px;
 `;
 
 const ChatTitle = styled.div`
@@ -112,7 +156,7 @@ const CallLogButton = styled.button`
 
 const ChatDate = styled.div`
   padding-bottom: 6px;
-  font-size: 13px;
+  font-size: 15px;
 `;
 
 const ChatBody = styled.div`
@@ -130,6 +174,7 @@ const ChatBubble = styled.div`
   background-color: ${({ fromUser }) => (fromUser ? '#ffe9ab' : '#fff')};
   align-self: ${({ fromUser }) => (fromUser ? 'flex-end' : 'flex-start')};
   margin-bottom: 12px;
+  font-size: 17px;
   white-space: pre-wrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
@@ -160,7 +205,7 @@ const Input = styled.input`
   padding: 15px 50px 15px 20px;
   border-radius: 25px;
   border: 1px solid #ccc;
-  font-size: 15px;
+  font-size: 17px;
 `;
 
 const SendButton = styled.button`
@@ -200,7 +245,42 @@ const Chatbot = () => {
       ? generalChatSessions.find(s => String(s.sessionId) === String(selected))
       : null;
 
-  // Bot 메시지 포맷터 (answer + sourcePages)
+  const isToday = (d) => {
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear()
+      && d.getMonth() === now.getMonth()
+      && d.getDate() === now.getDate();
+  };
+  const isWithin7Days = (d) => {
+    const now = new Date();
+    const ms = now - d;
+    const days = ms / (1000 * 60 * 60 * 24);
+    return days < 7 && !isToday(d);
+  };
+
+  // 섹션 open/close 상태
+  const [openGroups, setOpenGroups] = useState({
+    today: true,
+    week: true,
+    rest: true,
+  });
+
+  // 일반 세션을 섹션별로 묶기
+  const groupedGeneral = React.useMemo(() => {
+    const g = { today: [], week: [], rest: [] };
+    for (const s of generalChatSessions) {
+      const dt = new Date(s.startTime);
+      if (isToday(dt)) g.today.push(s);
+      else if (isWithin7Days(dt)) g.week.push(s);
+      else g.rest.push(s);
+    }
+    return g;
+  }, [generalChatSessions]);
+
+  const toggleGroup = (key) =>
+    setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
+
+  // Bot 메시지 포맷
   const formatBotMessage = (answer, sourcePages) => {
     let formatted = `${answer || ''}`;
     if (Array.isArray(sourcePages) && sourcePages.length > 0) {
@@ -278,7 +358,7 @@ const Chatbot = () => {
     }
   };
 
-  // ✅ 새 세션 생성 보장 (선택 없을 때 호출)
+  // 새 세션 생성 보장 (선택 없을 때 호출)
   const ensureSessionId = async () => {
     if (selected && /^\d+$/.test(String(selected))) return selected;
 
@@ -334,18 +414,19 @@ const Chatbot = () => {
   }, [selected, activeTab, generalChatMap]);
 
   const startNewChat = () => {
-  // 현재 선택된 세션의 메시지가 없거나 선택이 없는 상태라면, 그냥 빈 화면 유지
-  const currMsgs = selected ? (currentChatMap[selected] || []) : [];
-  if (!selected || currMsgs.length === 0) {
+    // 이미 빈 화면이면 그냥 입력만 초기화
+    const currMsgs = selected ? (currentChatMap[selected] || []) : [];
+    if (!selected || currMsgs.length === 0) {
+      setInputText('');
+      setSelected(null);
+      return;
+    }
+
+    // 다른 대화 보던 중이면 선택만 해제해서 빈 화면으로
     setInputText('');
     setSelected(null);
-    return;
-  }
+  };
 
-  // 다른 대화를 보다가 누르면 선택만 해제해서 새 채팅 화면으로 전환
-  setInputText('');
-  setSelected(null);
-};
 
   const handleSend = async () => {
     const text = inputText.trim();
@@ -457,34 +538,89 @@ const Chatbot = () => {
             <FaPlus size={14} /> 상담 내역 불러오기
           </SidebarActionButton>
         )}
-
         {showModal && <ChatListModal onClose={() => setShowModal(false)} />}
-
         <ChatList>
-          {activeTab === '일반'
-            ? generalChatSessions.map(({ sessionId, title, startTime }) => (
-                <ChatItem
-                  key={sessionId}
-                  selected={String(selected) === String(sessionId)}
-                  onClick={() => setSelected(sessionId)}
-                >
-                  <div style={{ fontWeight: 600 }}>
-                    {title || `새 대화 #${sessionId}`}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                    {new Date(startTime).toLocaleString()}
-                  </div>
-                </ChatItem>
-              ))
-            : consultChatSessions.map(sessionId => (
-                <ChatItem
-                  key={sessionId}
-                  selected={String(selected) === String(sessionId)}
-                  onClick={() => setSelected(sessionId)}
-                >
-                  {sessionId}
-                </ChatItem>
-              ))}
+           {activeTab === '일반' ? (
+            <>
+              <Section>
+                <SectionHeader onClick={() => toggleGroup('today')}>
+                  <span>오늘</span>
+                  <Chevron open={openGroups.today} />
+                </SectionHeader>
+                {openGroups.today && (
+                  <SectionBody>
+                    {groupedGeneral.today.map(({ sessionId, title }) => (
+                      <ChatItem
+                        key={sessionId}
+                        selected={String(selected) === String(sessionId)}
+                        onClick={() => setSelected(sessionId)}
+                      >
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {title || `일반 채팅${sessionId}`}
+                        </div>
+                      </ChatItem>
+                    ))}
+                  </SectionBody>
+                )}
+              </Section>
+
+              {/* 지난 7일 */}
+              <Section>
+                <SectionHeader onClick={() => toggleGroup('week')}>
+                  <span>지난 7일</span>
+                  <Chevron open={openGroups.week} />
+                </SectionHeader>
+                {openGroups.week && (
+                  <SectionBody>
+                    {groupedGeneral.week.map(({ sessionId, title }) => (
+                      <ChatItem
+                        key={sessionId}
+                        selected={String(selected) === String(sessionId)}
+                        onClick={() => setSelected(sessionId)}
+                      >
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {title || `일반 채팅${sessionId}`}
+                        </div>
+                      </ChatItem>
+                    ))}
+                  </SectionBody>
+                )}
+              </Section>
+
+              {/* 이전 대화 */}
+              <Section>
+                <SectionHeader onClick={() => toggleGroup('rest')}>
+                  <span>이전 대화</span>
+                  <Chevron open={openGroups.rest} />
+                </SectionHeader>
+                {openGroups.rest && (
+                  <SectionBody>
+                    {groupedGeneral.rest.map(({ sessionId, title }) => (
+                      <ChatItem
+                        key={sessionId}
+                        selected={String(selected) === String(sessionId)}
+                        onClick={() => setSelected(sessionId)}
+                      >
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {title || `일반 채팅${sessionId}`}
+                        </div>
+                      </ChatItem>
+                    ))}
+                  </SectionBody>
+                )}
+              </Section>
+            </>
+          ) : (
+            consultChatSessions.map((sessionId) => (
+              <ChatItem
+                key={sessionId}
+                selected={String(selected) === String(sessionId)}
+                onClick={() => setSelected(sessionId)}
+              >
+                {sessionId}
+              </ChatItem>
+            ))
+          )}
         </ChatList>
       </Sidebar>
 
@@ -494,7 +630,7 @@ const Chatbot = () => {
             <ChatHeader>
               <ChatTitle>
                 {activeTab === '일반'
-                  ? (selectedSessionMeta?.title || `새 대화 #${selected}`)
+                  ? (selectedSessionMeta?.title || `일반 채팅 #${selected}`)
                   : selected}
                 <CallLogButton
                   style={{
@@ -521,7 +657,7 @@ const Chatbot = () => {
         ) : (
           <ChatBody>
             <EmptyMessage>
-              새로운 채팅을 시작해보세요. 
+              새로운 채팅을 시작해보세요.
               <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
               아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
             </EmptyMessage>
