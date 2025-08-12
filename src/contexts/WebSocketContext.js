@@ -40,7 +40,7 @@ export const WebSocketProvider = ({ children }) => {
   };
 
   // Twilio → WS 순서로 종료
-  // 통화 및 WebSocket을 모두 종료하는 통합 함수
+  // 통화 및 WebSocket을 모두 종료
   const endCallAndDisconnect = () => {
     try {
       const conn = twilioConnectionRef.current;
