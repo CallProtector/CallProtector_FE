@@ -23,7 +23,7 @@ const Tabs = styled.div`
   display: flex;
   margin-top: 20px;
   border-bottom: 1px solid #ccc;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 `;
 
 const Tab = styled.button`
@@ -98,17 +98,13 @@ const ChatList = styled.div`
   &::-webkit-scrollbar {
     width: 8px;
   }
-
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.15); 
+    background-color: rgba(0, 0, 0, 0.15);
     border-radius: 4px;
   }
-
-
 `;
 
 const ChatItem = styled.div`
@@ -227,9 +223,9 @@ const Chatbot = () => {
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
 
-  // 일반 세션: [{sessionId, title, startTime}]
-  const [generalChatSessions, setGeneralChatSessions] = useState([]);
-  const [consultChatSessions, setConsultChatSessions] = useState([]);
+  // 세션/메시지 상태
+  const [generalChatSessions, setGeneralChatSessions] = useState([]); // [{sessionId, title, startTime}]
+  const [consultChatSessions, setConsultChatSessions] = useState([]); // [{sessionId, title, createdAt}]
   const [generalChatMap, setGeneralChatMap] = useState({});
   const [consultChatMap, setConsultChatMap] = useState({});
   const [selected, setSelected] = useState(null);
@@ -243,8 +239,9 @@ const Chatbot = () => {
   const selectedSessionMeta =
     activeTab === '일반'
       ? generalChatSessions.find(s => String(s.sessionId) === String(selected))
-      : null;
+      : consultChatSessions.find(s => String(s.sessionId) === String(selected));
 
+  // 날짜 유틸
   const isToday = (d) => {
     const now = new Date();
     return d.getFullYear() === now.getFullYear()
@@ -265,7 +262,7 @@ const Chatbot = () => {
     rest: true,
   });
 
-  // 일반 세션을 섹션별로 묶기
+  // 일반 세션 그룹핑
   const groupedGeneral = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
     for (const s of generalChatSessions) {
@@ -276,6 +273,18 @@ const Chatbot = () => {
     }
     return g;
   }, [generalChatSessions]);
+
+  // 상담별 세션 그룹핑
+  const groupedConsult = React.useMemo(() => {
+    const g = { today: [], week: [], rest: [] };
+    for (const s of consultChatSessions) {
+      const dt = new Date(s.createdAt);
+      if (isToday(dt)) g.today.push(s);
+      else if (isWithin7Days(dt)) g.week.push(s);
+      else g.rest.push(s);
+    }
+    return g;
+  }, [consultChatSessions]);
 
   const toggleGroup = (key) =>
     setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
@@ -292,7 +301,7 @@ const Chatbot = () => {
     return formatted.trim();
   };
 
-  // 일반 세션 목록 로드 (자동 선택 제거)
+  // 일반 세션 목록 로드
   const loadGeneralSessions = async () => {
     try {
       const res = await fetch('http://localhost:8080/api/chat-sessions/list', {
@@ -315,7 +324,6 @@ const Chatbot = () => {
           });
           return next;
         });
-
       } else {
         console.warn('세션 목록 조회 실패:', data?.message);
       }
@@ -324,8 +332,45 @@ const Chatbot = () => {
     }
   };
 
-  // 선택된 세션의 로그 로드
-  const loadChatLogs = async (sessionId) => {
+  // 상담별 세션 목록 로드
+  const loadConsultSessions = async () => {
+    try {
+      const raw = localStorage.getItem('accessToken');
+      const token = raw ? raw.replace(/^"+|"+$/g, '') : '';
+      const res = await fetch('http://localhost:8080/api/call-chat-sessions/list', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+      });
+      const data = await res.json();
+
+      if (res.ok && data.isSuccess && Array.isArray(data.result)) {
+        const list = [...data.result].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        setConsultChatSessions(list);
+
+        setConsultChatMap(prev => {
+          const next = { ...prev };
+          list.forEach(({ sessionId }) => {
+            if (!next[sessionId]) next[sessionId] = [];
+          });
+          return next;
+        });
+        return list;
+
+      } else {
+        console.warn('상담별 세션 목록 조회 실패:', data?.message);
+        return [];
+      }
+    } catch (e) {
+      console.error('상담별 세션 목록 호출 오류:', e);
+      return [];
+    }
+  };
+
+  // 세션 로그 로드 (일반/상담별 공용)
+  const loadChatLogs = async (sessionId, which = 'general') => {
     try {
       const res = await fetch(`http://localhost:8080/api/chat-log/session/${sessionId}`, {
         method: 'GET',
@@ -340,16 +385,15 @@ const Chatbot = () => {
 
         const msgList = [];
         logs.forEach(item => {
-          if (item.question) {
-            msgList.push({ fromUser: true, text: item.question });
-          }
+          if (item.question) msgList.push({ fromUser: true, text: item.question });
           msgList.push({
             fromUser: false,
             text: formatBotMessage(item.answer, item.sourcePages),
           });
         });
 
-        setGeneralChatMap(prev => ({ ...prev, [sessionId]: msgList }));
+        const setMap = which === 'general' ? setGeneralChatMap : setConsultChatMap;
+        setMap(prev => ({ ...prev, [sessionId]: msgList }));
       } else {
         console.warn('대화 로그 조회 실패:', data?.message);
       }
@@ -358,7 +402,7 @@ const Chatbot = () => {
     }
   };
 
-  // 새 세션 생성 보장 (선택 없을 때 호출)
+  // 새 일반 세션 생성
   const ensureSessionId = async () => {
     if (selected && /^\d+$/.test(String(selected))) return selected;
 
@@ -392,47 +436,57 @@ const Chatbot = () => {
     loadGeneralSessions();
   }, []);
 
-  // 탭 전환
+  // 탭 전환 시 목록 로딩
   useEffect(() => {
     if (activeTab === '일반') {
       loadGeneralSessions();
     } else {
-      setSelected(null);
+      loadConsultSessions();
     }
   }, [activeTab]);
 
-  // 세션 선택 시 해당 로그 로드(일반 탭만, 아직 메시지 없으면)
+  // 세션 선택 시 해당 로그 로드 (현재 탭 기준)
   useEffect(() => {
-    if (activeTab !== '일반') return;
     if (!selected) return;
 
-    const alreadyLoaded = Array.isArray(generalChatMap[selected]) && generalChatMap[selected].length > 0;
+    const map = activeTab === '일반' ? generalChatMap : consultChatMap;
+    const alreadyLoaded = Array.isArray(map[selected]) && map[selected].length > 0;
     if (!alreadyLoaded) {
       const isNumeric = String(selected).match(/^\d+$/);
-      if (isNumeric) loadChatLogs(selected);
+      if (isNumeric) loadChatLogs(selected, activeTab === '일반' ? 'general' : 'consult');
     }
-  }, [selected, activeTab, generalChatMap]);
+  }, [selected, activeTab, generalChatMap, consultChatMap]);
 
   const startNewChat = () => {
-    // 이미 빈 화면이면 그냥 입력만 초기화
+    // 일반 탭에서만 새 빈 화면
+    if (activeTab !== '일반') return;
+
     const currMsgs = selected ? (currentChatMap[selected] || []) : [];
     if (!selected || currMsgs.length === 0) {
       setInputText('');
       setSelected(null);
       return;
     }
-
-    // 다른 대화 보던 중이면 선택만 해제해서 빈 화면으로
     setInputText('');
     setSelected(null);
   };
-
 
   const handleSend = async () => {
     const text = inputText.trim();
     if (!text) return;
 
-    const sessionId = await ensureSessionId();
+    // 탭별 세션 아이디 결정
+    let sessionId;
+    if (activeTab === '일반') {
+      sessionId = await ensureSessionId();
+    } else {
+      // 상담별은 선택된 세션에만 전송 허용 (신규 생성 X)
+      if (!selected) {
+        alert('상담별 탭에서는 세션을 선택한 뒤 메시지를 전송하세요.');
+        return;
+      }
+      sessionId = selected;
+    }
 
     const userMessage = { fromUser: true, text };
     const chatMap = activeTab === '일반' ? generalChatMap : consultChatMap;
@@ -539,8 +593,9 @@ const Chatbot = () => {
           </SidebarActionButton>
         )}
         {showModal && <ChatListModal onClose={() => setShowModal(false)} />}
+
         <ChatList>
-           {activeTab === '일반' ? (
+          {activeTab === '일반' ? (
             <>
               <Section>
                 <SectionHeader onClick={() => toggleGroup('today')}>
@@ -564,7 +619,6 @@ const Chatbot = () => {
                 )}
               </Section>
 
-              {/* 지난 7일 */}
               <Section>
                 <SectionHeader onClick={() => toggleGroup('week')}>
                   <span>지난 7일</span>
@@ -587,7 +641,6 @@ const Chatbot = () => {
                 )}
               </Section>
 
-              {/* 이전 대화 */}
               <Section>
                 <SectionHeader onClick={() => toggleGroup('rest')}>
                   <span>이전 대화</span>
@@ -611,15 +664,73 @@ const Chatbot = () => {
               </Section>
             </>
           ) : (
-            consultChatSessions.map((sessionId) => (
-              <ChatItem
-                key={sessionId}
-                selected={String(selected) === String(sessionId)}
-                onClick={() => setSelected(sessionId)}
-              >
-                {sessionId}
-              </ChatItem>
-            ))
+            <>
+              <Section>
+                <SectionHeader onClick={() => toggleGroup('today')}>
+                  <span>오늘</span>
+                  <Chevron open={openGroups.today} />
+                </SectionHeader>
+                {openGroups.today && (
+                  <SectionBody>
+                    {groupedConsult.today.map(({ sessionId, title }) => (
+                      <ChatItem
+                        key={sessionId}
+                        selected={String(selected) === String(sessionId)}
+                        onClick={() => setSelected(sessionId)}
+                      >
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {title || `상담 ${sessionId}`}
+                        </div>
+                      </ChatItem>
+                    ))}
+                  </SectionBody>
+                )}
+              </Section>
+
+              <Section>
+                <SectionHeader onClick={() => toggleGroup('week')}>
+                  <span>지난 7일</span>
+                  <Chevron open={openGroups.week} />
+                </SectionHeader>
+                {openGroups.week && (
+                  <SectionBody>
+                    {groupedConsult.week.map(({ sessionId, title }) => (
+                      <ChatItem
+                        key={sessionId}
+                        selected={String(selected) === String(sessionId)}
+                        onClick={() => setSelected(sessionId)}
+                      >
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {title || `상담 ${sessionId}`}
+                        </div>
+                      </ChatItem>
+                    ))}
+                  </SectionBody>
+                )}
+              </Section>
+
+              <Section>
+                <SectionHeader onClick={() => toggleGroup('rest')}>
+                  <span>이전 대화</span>
+                  <Chevron open={openGroups.rest} />
+                </SectionHeader>
+                {openGroups.rest && (
+                  <SectionBody>
+                    {groupedConsult.rest.map(({ sessionId, title }) => (
+                      <ChatItem
+                        key={sessionId}
+                        selected={String(selected) === String(sessionId)}
+                        onClick={() => setSelected(sessionId)}
+                      >
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {title || `상담 ${sessionId}`}
+                        </div>
+                      </ChatItem>
+                    ))}
+                  </SectionBody>
+                )}
+              </Section>
+            </>
           )}
         </ChatList>
       </Sidebar>
@@ -631,7 +742,7 @@ const Chatbot = () => {
               <ChatTitle>
                 {activeTab === '일반'
                   ? (selectedSessionMeta?.title || `일반 채팅 #${selected}`)
-                  : selected}
+                  : (selectedSessionMeta?.title || `상담 #${selected}`)}
                 <CallLogButton
                   style={{
                     visibility: activeTab === '상담별' ? 'visible' : 'hidden',
@@ -643,7 +754,9 @@ const Chatbot = () => {
               <ChatDate>
                 {activeTab === '일반' && selectedSessionMeta?.startTime
                   ? new Date(selectedSessionMeta.startTime).toLocaleString()
-                  : ' '}
+                  : activeTab === '상담별' && selectedSessionMeta?.createdAt
+                    ? new Date(selectedSessionMeta.createdAt).toLocaleString()
+                    : ' '}
               </ChatDate>
             </ChatHeader>
             <ChatBody>
@@ -657,9 +770,17 @@ const Chatbot = () => {
         ) : (
           <ChatBody>
             <EmptyMessage>
-              새로운 채팅을 시작해보세요.
-              <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
-              아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
+              {activeTab === '일반' ? (
+                <>
+                  새로운 채팅을 시작해보세요.
+                  <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
+                  아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
+                </>
+              ) : (
+                <>
+                  상담별 세션을 선택하거나 ‘상담 내역 불러오기’를 눌러 목록을 불러오세요.
+                </>
+              )}
             </EmptyMessage>
           </ChatBody>
         )}
@@ -667,7 +788,9 @@ const Chatbot = () => {
         <InputArea>
           <InputWrapper>
             <Input
-              placeholder="메시지를 입력하세요"
+              placeholder={activeTab === '일반'
+                ? '메시지를 입력하세요'
+                : '상담별 탭은 세션 선택 후 메시지 전송 가능합니다'}
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               onKeyDown={e => {
