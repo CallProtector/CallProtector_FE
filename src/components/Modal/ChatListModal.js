@@ -47,6 +47,13 @@ const StatusMsg = styled.div`
   font-size: 14px;
 `;
 
+const ErrorMsg = styled.div`
+  text-align: center;
+  color: #c00;
+  margin: 0 0 10px 0;
+  font-size: 14px;
+`;
+
 const TableWrapper = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -136,19 +143,21 @@ function formatDate(s) {
 }
 
 /**
- * @param {{ onClose: () => void, onSelect: (session: {id:number, callSessionCode:string, createdAt:string, category:string}) => void }} props
+ * @param {{ onClose: () => void, onSelect?: (session: {id:number, callSessionCode:string, createdAt:string, category:string}) => void }} props
  */
 const ChatListModal = ({ onClose, onSelect }) => {
-  // 순수 JS로 변경 (타입 표기 제거)
-  const [rows, setRows] = useState([]);     // [{id, callSessionCode, createdAt, category}]
+  const [rows, setRows] = useState([]);      // [{id, callSessionCode, createdAt, category}]
   const [selectedId, setSelectedId] = useState(null);
   const [cursorId, setCursorId] = useState(null);
   const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
-  const [connectionMsg, setConnectionMsg] = useState(''); // 연동 확인 메시지
+  const [connectionMsg, setConnectionMsg] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeMsg, setAnalyzeMsg] = useState('');
 
   const ABUSE_SESSIONS_API = 'http://localhost:8080/api/call-sessions/abusive';
+  const ANALYZE_API_BASE = 'http://localhost:8080/api/chatbot/analyze';
   const DEFAULT_PAGE_SIZE = 5;
 
   const fetchPage = async ({ cursor, size, replace = false } = {}) => {
@@ -168,7 +177,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
     try {
       const qs = new URLSearchParams();
       if (cursor !== null && cursor !== undefined) qs.set('cursorId', String(cursor));
-      qs.set('size', String(size ?? DEFAULT_PAGE_SIZE)); // 첫 요청도 size 명시
+      qs.set('size', String(size ?? DEFAULT_PAGE_SIZE));
 
       const url = `${ABUSE_SESSIONS_API}?${qs.toString()}`;
 
@@ -196,7 +205,6 @@ const ChatListModal = ({ onClose, onSelect }) => {
         return;
       }
 
-      // 명세 스키마: { isSuccess, code, message, result: { sessions, nextCursorId, hasNext } }
       const result = (data && data.result) || {};
       const sessions = Array.isArray(result.sessions) ? result.sessions : [];
       const next = (result.nextCursorId !== undefined) ? result.nextCursorId : null;
@@ -205,14 +213,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
       setRows(prev => (replace ? sessions : [...prev, ...sessions]));
       setCursorId(next);
       setHasNext(nextFlag);
-
-      // 0건이어도 연동 OK 표시
-      if ((replace || cursor == null) && sessions.length === 0) {
-        setConnectionMsg('✅ API 연동 성공 (데이터 0건) — 인증/경로/스키마 OK');
-      } else if (sessions.length > 0) {
-        setConnectionMsg('✅ API 연동 성공');
-      }
-
+      
       if (replace && sessions.length > 0 && selectedId == null) {
         setSelectedId(sessions[0].id);
       }
@@ -225,7 +226,6 @@ const ChatListModal = ({ onClose, onSelect }) => {
   };
 
   useEffect(() => {
-    // 첫 페이지 로드
     fetchPage({ replace: true, size: DEFAULT_PAGE_SIZE });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -234,6 +234,85 @@ const ChatListModal = ({ onClose, onSelect }) => {
     () => rows.find(r => r.id === selectedId) || null,
     [rows, selectedId]
   );
+
+  // ===== 분석 시작 (SSE) =====
+  const startAnalyze = () => {
+    if (!selectedRow) return;
+
+    const tokenRaw = localStorage.getItem('accessToken');
+    const token = tokenRaw ? tokenRaw.replace(/^"+|"+$/g, '') : null;
+    if (!token) {
+      setErr('인증이 필요합니다.');
+      return;
+    }
+
+    setAnalyzing(true);
+    setAnalyzeMsg('분석을 시작합니다…');
+    setErr('');
+
+    // ✅ 핵심 수정사항: 서버가 요구하는 숫자 ID (selectedRow.id)를 사용합니다.
+    const url = `${ANALYZE_API_BASE}/${encodeURIComponent(selectedRow.id)}?token=${encodeURIComponent(token)}`;
+    console.log('[analyze SSE URL]', url);
+
+   const es = new EventSource(url);
+    let buffer = '';
+    let ended = false;
+
+    es.onmessage = (ev) => {
+      const chunk = ev.data || '';
+      // 진행상황 텍스트는 화면에 보여주기(원하면 생략 가능)
+      if (!chunk.startsWith('[JSON]') && chunk !== '[END]') {
+        setAnalyzeMsg(prev => (prev ? prev + '' : '') ); // 깔끔히 유지하고 싶으면 noop
+        console.log('Received stream data (ignored):', chunk);
+        return;
+      }
+
+      // JSON payload
+      if (chunk.startsWith('[JSON]')) {
+        buffer += chunk.replace('[JSON]', '').trim();
+        return;
+      }
+
+      // 스트림 종료 신호
+      if (chunk === '[END]') {
+        ended = true;
+        try {
+          const jsonStart = buffer.indexOf('{');
+          const jsonEnd   = buffer.lastIndexOf('}') + 1;
+          const jsonStr   = jsonStart >= 0 ? buffer.substring(jsonStart, jsonEnd) : '{}';
+          const data      = JSON.parse(jsonStr || '{}');
+
+          // 명세상 성공 포맷: {"errorCode": null, "message": "SUCCESS", "result": null}
+          if (!data.errorCode && (data.message === 'SUCCESS' || !data.message)) {
+            setAnalyzeMsg('✅ 분석 완료! 채팅을 열고 있어요…');
+            setAnalyzing(false);
+            es.close();
+            // 부모에게 “완료” 신호 전달 → 부모가 세션 새로고침 & 최신 세션 선택
+            onSelect && onSelect(selectedRow);
+            onClose && onClose();
+            return;
+          }
+          // 서버 메시지 전달
+          setErr(data.message || '분석 결과 처리 중 오류');
+        } catch (e) {
+          console.warn('Analyze JSON parse failed:', e);
+          setErr('분석 응답 파싱 실패');
+        } finally {
+          setAnalyzing(false);
+          es.close();
+        }
+      }
+    };
+
+    es.onerror = () => {
+      // 정상 종료에도 onerror가 올 수 있으니 ended로 구분
+      if (!ended) {
+        setErr('SSE 연결 오류가 발생했습니다.');
+        setAnalyzing(false);
+      }
+      es.close();
+    };
+  };
 
   return (
     <Overlay onClick={onClose}>
@@ -244,6 +323,8 @@ const ChatListModal = ({ onClose, onSelect }) => {
         </ModalHeader>
 
         {connectionMsg && <StatusMsg>{connectionMsg}</StatusMsg>}
+        {analyzeMsg && <StatusMsg>{analyzeMsg}</StatusMsg>}
+        {err && <ErrorMsg>{err}</ErrorMsg>}
 
         <TableWrapper>
           <Table>
@@ -261,8 +342,6 @@ const ChatListModal = ({ onClose, onSelect }) => {
                   key={c.id}
                   onDoubleClick={() => {
                     setSelectedId(c.id);
-                    onSelect && onSelect(c);
-                    onClose && onClose();
                   }}
                   style={{ cursor: 'pointer' }}
                 >
@@ -288,27 +367,23 @@ const ChatListModal = ({ onClose, onSelect }) => {
               {connectionMsg || '요청은 정상 처리되었습니다.'}
             </EmptyState>
           )}
-          {err && <EmptyState style={{ color: '#c00' }}>{err}</EmptyState>}
         </TableWrapper>
 
         <Footer>
           {hasNext && (
             <MoreButton
               onClick={() => fetchPage({ cursor: cursorId })}
-              disabled={loading}
+              disabled={loading || analyzing}
             >
               더 보기
             </MoreButton>
           )}
           <StartButton
-            disabled={!selectedRow}
-            onClick={() => {
-              if (!selectedRow) return;
-              onSelect && onSelect(selectedRow);
-              onClose && onClose();
-            }}
+            disabled={!selectedRow || analyzing}
+            onClick={startAnalyze}
+            title={!selectedRow ? '항목을 선택하세요' : '이 상담 분석 시작'}
           >
-            상담 시작하기
+            {analyzing ? '분석 시작 중…' : '상담 시작하기'}
           </StartButton>
         </Footer>
       </ModalContainer>
