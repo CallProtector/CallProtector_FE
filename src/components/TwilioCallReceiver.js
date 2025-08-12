@@ -1,68 +1,93 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import IncomingCallModal from "./Modal/IncomingCallModal"; // 모달 컴포넌트
-import API from "../api/axiosInstance";
+import IncomingCallModal from "./Modal/IncomingCallModal";
 import axios from "axios";
+import { useWebSocket } from "../contexts/WebSocketContext";
 
 const TwilioCallReceiver = () => {
   const [showModal, setShowModal] = useState(false);
   const deviceRef = useRef(null);
   const connectionRef = useRef(null);
   const navigate = useNavigate();
-
   const API_BASE_URL = process.env.REACT_APP_API_URL;
 
+  // 💡 WebSocketContext의 sessionInfo와 setSessionInfo 사용
+  const {
+    sessionInfo,
+    setSessionInfo,
+    disconnectWebSocket,
+    registerTwilioRefs,
+    isCallEnded,
+  } = useWebSocket();
+
   useEffect(() => {
-    console.log("📡 TwilioCallReceiver mounted!");
-    console.log("✅ API URL:", API_BASE_URL);
+    const jwtToken = localStorage.getItem("accessToken");
+    console.log("🔑 jwtToken:", jwtToken);
+    if (!jwtToken) return;
 
     const initTwilio = async () => {
-      try {
-        // const res = await API.get("/api/token");
-        const res = await axios.get(`http://localhost:8080/api/token`);
+      const res = await axios.get(`${API_BASE_URL}/api/token`, {
+        headers: { Authorization: `Bearer ${jwtToken}` },
+      });
 
-        const data = res.data;
-        const accessToken = data.result.twilioAccessToken;
-        console.log("응답 확인:", data);
+      const twilioAccessToken = res.data.result.twilioAccessToken;
+      const device = new window.Twilio.Device(twilioAccessToken, {
+        debug: true,
+      });
+      deviceRef.current = device;
 
-        const device = new window.Twilio.Device(accessToken, { debug: true });
-        deviceRef.current = device;
+      device.on("ready", () => {
+        console.log("✅ Device ready");
+        window.Twilio.Device.audio?.speakerDevices.set("default");
+      });
 
-        device.on("ready", () => {
-          console.log("✅ Device ready");
-          window.Twilio.Device.audio?.speakerDevices.set("default");
+      device.on("incoming", (conn) => {
+        console.log("📞 수신:", conn.parameters.From);
+        console.log("🆔 originalInboundCallSid:", conn.parameters.CallSid);
+        console.log("☎️ callerNumber:", conn.parameters.From);
+
+        connectionRef.current = conn;
+
+        // 컨텍스트에 Twilio 객체 등록
+        registerTwilioRefs(deviceRef.current, connectionRef.current);
+
+        // connection 레벨 이벤트로 종료 감지
+        conn.on("accept", () => console.log("✅ 연결 accept"));
+        conn.on("disconnect", () => {
+          console.log("🔚 connection.disconnect");
+          disconnectWebSocket(); // Twilio 종료 이벤트를 받은 뒤 WS 닫기
         });
-
-        device.on("incoming", (conn) => {
-          console.log("📞 수신:", conn.parameters.From);
-          connectionRef.current = conn;
-          setShowModal(true);
+        conn.on("cancel", () => {
+          console.log("❌ 수신 취소");
+          disconnectWebSocket();
         });
+        setShowModal(true);
+      });
 
-        device.on("connect", () => {
-          console.log("🔊 통화 연결됨");
-          setShowModal(false);
-          navigate("/callLog", { state: { callAccepted: true } });
-        });
+      device.on("disconnect", () => {
+        console.log("❌ Twilio 통화 종료");
+        setShowModal(false);
+      });
 
-        device.on("disconnect", () => {
-          console.log("❌ 통화 종료");
-          setShowModal(false);
-        });
+      device.on("cancel", () => {
+        console.log("❌ 수신 통화 취소됨 (고객이 끊음)");
+        setShowModal(false);
+        disconnectWebSocket();
+      });
 
-        device.on("error", (err) => {
-          console.error("🚨 Twilio 오류:", err);
-          setShowModal(false);
-        });
-      } catch (err) {
-        console.error("❌ 초기화 실패:", err);
-      }
+      device.on("error", (err) => {
+        console.error("🚨 Twilio 오류:", err);
+        setShowModal(false);
+      });
     };
 
     initTwilio();
 
     return () => {
-      deviceRef.current?.destroy();
+      console.log("🧹 TwilioCallReceiver 언마운트: 리소스 정리");
+      if (deviceRef.current) {
+        deviceRef.current.destroy(); // Twilio 디바이스 파괴
+      }
     };
   }, []);
 
@@ -71,6 +96,18 @@ const TwilioCallReceiver = () => {
       connectionRef.current.accept();
       console.log("✅ 수신 수락됨");
       setShowModal(false);
+
+      // 💡 setSessionInfo가 아닌, 전역 상태 sessionInfo를 사용
+      if (sessionInfo) {
+        navigate("/callLog", {
+          state: {
+            callAccepted: true,
+            ...sessionInfo,
+          },
+        });
+      } else {
+        console.warn("⚠️ sessionInfo 없음!");
+      }
     }
   };
 
@@ -83,13 +120,12 @@ const TwilioCallReceiver = () => {
   };
 
   return (
-    <>
-      <IncomingCallModal
-        show={showModal}
-        onAccept={handleAccept}
-        onReject={handleReject}
-      />
-    </>
+    <IncomingCallModal
+      show={showModal}
+      onAccept={handleAccept}
+      onReject={handleReject}
+      connectionRef={connectionRef}
+    />
   );
 };
 
