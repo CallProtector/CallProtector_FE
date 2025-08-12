@@ -9,13 +9,13 @@ import { WebSocketProvider } from "./contexts/WebSocketContext";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <React.StrictMode>
-    <WebSocketProvider>
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
-    </WebSocketProvider>
-  </React.StrictMode>
+  // <React.StrictMode>
+  <WebSocketProvider>
+    <BrowserRouter>
+      <AppRouter />
+    </BrowserRouter>
+  </WebSocketProvider>
+  // </React.StrictMode>
 );
 
 // If you want to start measuring performance in your app, pass a function

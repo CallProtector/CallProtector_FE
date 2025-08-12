@@ -7,7 +7,7 @@ const CallList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("latest");
 
-  const categories = ["전체", "폭언", "성희롱"];
+  const categories = ["전체", "폭언", "성희롱", "협박"];
 
   const data = React.useMemo(
     () => [

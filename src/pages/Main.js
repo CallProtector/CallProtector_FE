@@ -19,7 +19,7 @@ const Main = () => {
       </div>
 
       {/* 💥 무조건 WarningModal 렌더링(디자인 확인용) */}
-      <WarningModal />
+      {/*<WarningModal />*/}
     </div>
   );
 };

@@ -298,10 +298,10 @@
 }
 
 .version-label {
-  font-weight: 500;
   font-size: 18px;
-  color: #4a4a4a;
+  color: black;
   margin-top: 10px;
+  margin-right: 10px;
 }
 
 .version-select {
@@ -310,4 +310,58 @@
   border: 1px solid #ccc;
   border-radius: 6px;
   margin-top: 10px;
+}
+
+.conversation .interim-line {
+  /* 중간 결과 줄 전체에 대한 스타일 (예: 줄 간격, 배경색 등) */
+  opacity: 0.7; /* 약간 흐리게 */
+  color: #666;
+  font-size: 0.9em;
+}
+
+.conversation .interim-text {
+  /* 중간 결과 텍스트 스타일 */
+  margin: 0;
+  padding: 0;
+}
+
+.version-description {
+  font-size: 16px;
+  color: black;
+  margin-top: 10px;
+}
+
+.version-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.version-button {
+  flex: 1;
+  padding: 6px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f8f8f8;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* 버튼에 입체감 추가 */
+}
+
+.version-button:hover {
+  background-color: #ececec;
+  border-color: #ccc;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px); /* 호버 시 살짝 올라가는 효과 */
+}
+
+.version-button.active {
+  background-color: #5c24af; /* 선택된 버튼의 배경색 */
+  color: #fff; /* 선택된 버튼의 글자색 */
+  border-color: #5c24af; /* 선택된 버튼의 테두리색 */
+  box-shadow: 0 4px 8px rgba(106, 27, 154, 0.2);
+  transform: translateY(0);
 }

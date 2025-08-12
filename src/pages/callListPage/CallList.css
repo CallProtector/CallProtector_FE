@@ -96,7 +96,7 @@
 .tabs {
   display: flex;
   gap: 12px;
-}
+} 
 .call-list-container {
   display: flex;
   flex-direction: column;
