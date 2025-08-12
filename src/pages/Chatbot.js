@@ -295,7 +295,7 @@ const Chatbot = () => {
   // 일반 세션 목록 로드 (자동 선택 제거)
   const loadGeneralSessions = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/chat-session/list', {
+      const res = await fetch('http://localhost:8080/api/chat-sessions/list', {
         method: 'GET',
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       });
@@ -362,7 +362,7 @@ const Chatbot = () => {
   const ensureSessionId = async () => {
     if (selected && /^\d+$/.test(String(selected))) return selected;
 
-    const res = await fetch('http://localhost:8080/api/chat-session', {
+    const res = await fetch('http://localhost:8080/api/chat-sessions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
