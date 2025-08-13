@@ -30,9 +30,11 @@
 }
 
 .search-bar {
+  flex: 1;
   display: flex;
   gap: 20px;
   height: 60px;
+  margin-left: 60px;
   margin-bottom: 16px;
   border-bottom: 1px solid #eee;
 }
@@ -63,27 +65,12 @@
   font-weight: bold;
 }
 
-.sort-options {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.sort-options span {
-  cursor: pointer;
-  color: #666;
-}
-
-.sort-options .selected {
-  font-weight: bold;
-  color: #000;
-}
-
 .pagination {
+  margin-top: auto;
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 40px;
+  padding-top: 40px;
 }
 
 .pagination button {
@@ -109,24 +96,14 @@
 .tabs {
   display: flex;
   gap: 12px;
-}
-
-.sort-options {
+} 
+.call-list-container {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 40px;
+  background-color: #f3f6fe;
 }
-
-.sort-options span {
-  cursor: pointer;
-  color: #666;
-  font-size: 20px;
-}
-
-.sort-options .selected {
-  font-weight: bold;
-  color: #000;
-}
-
 .call-table {
   width: 100%;
   border-collapse: collapse;
@@ -142,6 +119,7 @@
   padding: 16px;
   text-align: left;
   border-bottom: 1px solid #eee;
+  white-space: nowrap;
   font-size: 20px;
 }
 
@@ -149,4 +127,39 @@
   background-color: #f1eefc;
   font-weight: bold;
   color: #5c24af;
+}
+
+.search-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0;
+  font-size: 16px;
+}
+
+.result-count {
+  color: #333;
+  font-weight: 500;
+  font-size: 20px;
+}
+
+.sort-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-label {
+  color: #555;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.sort-select {
+  font-size: 20px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: white;
+  color: #333;
 }

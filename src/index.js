@@ -5,14 +5,17 @@ import "./index.css";
 import reportWebVitals from "./reportWebVitals";
 import AppRouter from "./Routes";
 import { BrowserRouter } from "react-router-dom";
+import { WebSocketProvider } from "./contexts/WebSocketContext";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <React.StrictMode>
+  // <React.StrictMode>
+  <WebSocketProvider>
     <BrowserRouter>
       <AppRouter />
     </BrowserRouter>
-  </React.StrictMode>
+  </WebSocketProvider>
+  // </React.StrictMode>
 );
 
 // If you want to start measuring performance in your app, pass a function
