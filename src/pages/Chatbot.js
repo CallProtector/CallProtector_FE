@@ -471,18 +471,20 @@ const Chatbot = () => {
     }
   }, [activeTab]);
 
-  // 세션 선택 시 해당 로그 로드 (현재 탭 기준)
   useEffect(() => {
-    if (!selected) return;
+  if (!selected) return;
 
-    const map = activeTab === '일반' ? generalChatMap : consultChatMap;
-    const alreadyLoaded = Array.isArray(map[selected]) && map[selected].length > 0;
-    if (!alreadyLoaded) {
-      const isNumeric = String(selected).match(/^\d+$/);
-      if (isNumeric)
-        loadChatLogs(selected, activeTab === '일반' ? 'general' : 'consult');
+  // 여기서만 로딩 여부 판단
+  const map = activeTab === '일반' ? generalChatMap : consultChatMap;
+  if (!Array.isArray(map[selected]) || map[selected].length === 0) {
+    const isNumeric = /^\d+$/.test(String(selected));
+    if (isNumeric) {
+      loadChatLogs(selected, activeTab === '일반' ? 'general' : 'consult');
     }
-  }, [selected, activeTab, generalChatMap, consultChatMap]);
+  }
+  // map 제거 → 불필요 재호출 방지
+}, [selected, activeTab]);
+
 
   const startNewChat = () => {
     // 일반 탭에서만 새 빈 화면
@@ -909,57 +911,61 @@ const Chatbot = () => {
                 {activeTab === '일반' && selectedSessionMeta?.startTime
                   ? new Date(selectedSessionMeta.startTime).toLocaleString()
                   : activeTab === '상담별' && selectedSessionMeta?.createdAt
-                  ? new Date(selectedSessionMeta.createdAt).toLocaleString()
-                  : ' '}
+                    ? new Date(selectedSessionMeta.createdAt).toLocaleString()
+                    : ' '}
               </ChatDate>
             </ChatHeader>
             <ChatBody>
-              {messages.map((msg, idx) => (
-                <ChatBubble key={idx} fromUser={msg.fromUser}>
-                  {msg.text}
-                </ChatBubble>
-              ))}
-            </ChatBody>
-          </>
-        ) : (
-          <ChatBody>
-            <EmptyMessage>
-              {activeTab === '일반' ? (
-                <>
-                  새로운 채팅을 시작해보세요.
-                  <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
-                  아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
-                </>
-              ) : (
-                <>
-                  상담별 세션을 선택하거나 ‘상담 내역 불러오기’를 눌러 목록을 불러오세요.
-                </>
-              )}
-            </EmptyMessage>
+            {messages.map((msg, idx) => (
+              <ChatBubble
+                key={idx}
+                fromUser={msg.fromUser}
+                dangerouslySetInnerHTML={{
+                  __html: msg.text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                }}
+              />
+            ))}
           </ChatBody>
+      </>
+      ) : (
+      <ChatBody>
+        <EmptyMessage>
+          {activeTab === '일반' ? (
+            <>
+              새로운 채팅을 시작해보세요.
+              <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
+              아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
+            </>
+          ) : (
+            <>
+              상담별 세션을 선택하거나 ‘상담 내역 불러오기’를 눌러 목록을 불러오세요.
+            </>
+          )}
+        </EmptyMessage>
+      </ChatBody>
         )}
 
-        <InputArea>
-          <InputWrapper>
-            <Input
-              placeholder={
-                activeTab === '일반'
-                  ? '메시지를 입력하세요'
-                  : '상담별 탭은 세션 선택 후 메시지 전송 가능합니다'
-              }
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSend();
-              }}
-            />
-            <SendButton onClick={handleSend}>
-              <FiSend size={24} />
-            </SendButton>
-          </InputWrapper>
-        </InputArea>
-      </ChatArea>
-    </Container>
+      <InputArea>
+        <InputWrapper>
+          <Input
+            placeholder={
+              activeTab === '일반'
+                ? '메시지를 입력하세요'
+                : '상담별 탭은 세션 선택 후 메시지 전송 가능합니다'
+            }
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSend();
+            }}
+          />
+          <SendButton onClick={handleSend}>
+            <FiSend size={24} />
+          </SendButton>
+        </InputWrapper>
+      </InputArea>
+    </ChatArea>
+    </Container >
   );
 };
 
