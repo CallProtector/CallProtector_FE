@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { playBeep, primeBeep } from "../utils/beep";
 
 const WebSocketContext = createContext();
 
@@ -65,6 +66,16 @@ export const WebSocketProvider = ({ children }) => {
     }, 1500);
   };
 
+  // ✅ 최초 사용자 제스처(아무 클릭) 시 한 번만 오디오 컨텍스트 프라임
+  useEffect(() => {
+    const handler = () => {
+      primeBeep();
+      window.removeEventListener("click", handler, true);
+    };
+    window.addEventListener("click", handler, true);
+    return () => window.removeEventListener("click", handler, true);
+  }, []);
+
   useEffect(() => {
     console.log("📡 WebSocketProvider mounted");
 
@@ -84,6 +95,13 @@ export const WebSocketProvider = ({ children }) => {
         console.log("📩 WebSocket 메시지 수신:", data);
 
         switch (data.type) {
+          // ✅ 서버 비프 트리거 수신 → 즉시 로컬 비프 재생
+          case "beep": {
+            const ms = Number(data.durationMs) || 1000;
+            playBeep(ms);
+            break;
+          }
+
           case "sessionInfo":
             console.log("✅ [sessionInfo] 수신됨:", data);
             setSessionInfo({
