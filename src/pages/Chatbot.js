@@ -370,37 +370,47 @@ const Chatbot = () => {
   };
 
   // 세션 로그 로드 (일반/상담별 공용)
-  const loadChatLogs = async (sessionId, which = 'general') => {
-    try {
-      const res = await fetch(`http://localhost:8080/api/chat-log/session/${sessionId}`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-      });
-      const data = await res.json();
+const loadChatLogs = async (sessionId, which = 'general') => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    let url;
 
-      if (res.ok && data.isSuccess && Array.isArray(data.result)) {
-        const logs = [...data.result].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-
-        const msgList = [];
-        logs.forEach(item => {
-          if (item.question) msgList.push({ fromUser: true, text: item.question });
-          msgList.push({
-            fromUser: false,
-            text: formatBotMessage(item.answer, item.sourcePages),
-          });
-        });
-
-        const setMap = which === 'general' ? setGeneralChatMap : setConsultChatMap;
-        setMap(prev => ({ ...prev, [sessionId]: msgList }));
-      } else {
-        console.warn('대화 로그 조회 실패:', data?.message);
-      }
-    } catch (e) {
-      console.error('대화 로그 호출 오류:', e);
+    if (which === 'general') {
+      url = `http://localhost:8080/api/chat-log/session/${sessionId}`;
+    } else {
+      // 상담별 조회 시 새로운 API 사용
+      url = `http://localhost:8080/api/call-chat-log/session/${sessionId}`;
     }
-  };
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+
+    if (res.ok && data.isSuccess && Array.isArray(data.result)) {
+      const logs = [...data.result].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+
+      const msgList = [];
+      logs.forEach(item => {
+        if (item.question) msgList.push({ fromUser: true, text: item.question });
+        msgList.push({
+          fromUser: false,
+          text: formatBotMessage(item.answer, item.sourcePages),
+        });
+      });
+
+      const setMap = which === 'general' ? setGeneralChatMap : setConsultChatMap;
+      setMap(prev => ({ ...prev, [sessionId]: msgList }));
+    } else {
+      console.warn('대화 로그 조회 실패:', data?.message);
+    }
+  } catch (e) {
+    console.error('대화 로그 호출 오류:', e);
+  }
+};
 
   // 새 일반 세션 생성
   const ensureSessionId = async () => {
@@ -488,6 +498,7 @@ const Chatbot = () => {
       sessionId = selected;
     }
 
+
     const userMessage = { fromUser: true, text };
     const chatMap = activeTab === '일반' ? generalChatMap : consultChatMap;
 
@@ -571,6 +582,54 @@ const Chatbot = () => {
     }
   };
 
+
+
+  const ensureCallChatSessionFromCall = async (callSessionId) => {
+    try {
+      const raw = localStorage.getItem('accessToken');
+      const token = raw ? raw.replace(/^"+|"+$/g, '') : '';
+      const url = `http://localhost:8080/api/call-chat-sessions/by-call-session?callSessionId=${encodeURIComponent(callSessionId)}`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.isSuccess || !data.result?.sessionId) {
+        console.warn('상담별 세션 확보 실패:', data?.message);
+        return null;
+      }
+      const session = data.result; // { sessionId, title?, createdAt? }
+
+      // 목록에 없으면 추가
+      setConsultChatSessions(prev => {
+        const exists = prev.some(s => String(s.sessionId) === String(session.sessionId));
+        if (exists) return prev;
+        return [
+          { sessionId: session.sessionId, title: session.title ?? null, createdAt: session.createdAt ?? new Date().toISOString() },
+          ...prev,
+        ];
+      });
+      // 메시지 맵 슬롯 보장
+      setConsultChatMap(prev => (prev[session.sessionId] ? prev : { ...prev, [session.sessionId]: [] }));
+      return session;
+    } catch (e) {
+      console.error('상담별 세션 확보 호출 오류:', e);
+      return null;
+    }
+  };
+
+    const refreshConsultAndFocusLatest = async () => {
+    const list = await loadConsultSessions();
+    if (list && list.length) {
+      const latest = list[0]; // createdAt DESC 정렬 기준
+      setActiveTab('상담별');
+      setSelected(latest.sessionId);
+      await loadChatLogs(latest.sessionId, 'consult');
+      return latest;
+    }
+    return null;
+  };
+
   return (
     <Container>
       <Sidebar>
@@ -592,8 +651,20 @@ const Chatbot = () => {
             <FaPlus size={14} /> 상담 내역 불러오기
           </SidebarActionButton>
         )}
-        {showModal && <ChatListModal onClose={() => setShowModal(false)} />}
-
+        {showModal && (
+          <ChatListModal
+            onClose={() => setShowModal(false)}
+            onSelect={async (row) => {
+              // row.id === callSessionId
+              const s = await ensureCallChatSessionFromCall(row.id);
+              setShowModal(false);
+              if (!s) return;
+              setActiveTab('상담별');
+              setSelected(s.sessionId);
+              await loadChatLogs(s.sessionId, 'consult');
+            }}
+          />
+        )}
         <ChatList>
           {activeTab === '일반' ? (
             <>
