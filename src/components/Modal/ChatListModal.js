@@ -374,7 +374,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
             onClick={startAnalyze}
             title={!selectedRow ? '항목을 선택하세요' : '이 상담 분석 시작'}
           >
-            {analyzing ? '분석 시작 중…' : '상담 시작하기'}
+            {analyzing ? '분석중…' : '상담 시작하기'}
           </StartButton>
         </Footer>
       </ModalContainer>

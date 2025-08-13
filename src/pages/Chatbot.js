@@ -370,47 +370,52 @@ const Chatbot = () => {
   };
 
   // 세션 로그 로드 (일반/상담별 공용)
-const loadChatLogs = async (sessionId, which = 'general') => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    let url;
+  const loadChatLogs = async (sessionId, which = 'general') => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      let url;
 
-    if (which === 'general') {
-      url = `http://localhost:8080/api/chat-log/session/${sessionId}`;
-    } else {
-      // 상담별 조회 시 새로운 API 사용
-      url = `http://localhost:8080/api/call-chat-log/session/${sessionId}`;
-    }
+      if (which === 'general') {
+        url = `http://localhost:8080/api/chat-log/session/${sessionId}`;
+      } else {
+        // 상담별 조회 시 새로운 API 사용
+        url = `http://localhost:8080/api/call-chat-log/session/${sessionId}`;
+      }
 
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-
-    if (res.ok && data.isSuccess && Array.isArray(data.result)) {
-      const logs = [...data.result].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
-
-      const msgList = [];
-      logs.forEach(item => {
-        if (item.question) msgList.push({ fromUser: true, text: item.question });
-        msgList.push({
-          fromUser: false,
-          text: formatBotMessage(item.answer, item.sourcePages),
-        });
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
       });
+      const data = await res.json();
 
-      const setMap = which === 'general' ? setGeneralChatMap : setConsultChatMap;
-      setMap(prev => ({ ...prev, [sessionId]: msgList }));
-    } else {
-      console.warn('대화 로그 조회 실패:', data?.message);
+      if (res.ok && data.isSuccess && Array.isArray(data.result)) {
+        const logs = [...data.result].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+
+        const isInitialAnalysis = (q) =>
+          typeof q === 'string' && /^\s*\[초기\s*분석]/.test(q);
+
+        const msgList = [];
+        logs.forEach(item => {
+          if (item.question && !isInitialAnalysis(item.question)) {
+            msgList.push({ fromUser: true, text: item.question });
+          }
+            msgList.push({
+              fromUser: false,
+              text: formatBotMessage(item.answer, item.sourcePages),
+            });
+          });
+
+        const setMap = which === 'general' ? setGeneralChatMap : setConsultChatMap;
+        setMap(prev => ({ ...prev, [sessionId]: msgList }));
+      } else {
+        console.warn('대화 로그 조회 실패:', data?.message);
+      }
+    } catch (e) {
+      console.error('대화 로그 호출 오류:', e);
     }
-  } catch (e) {
-    console.error('대화 로그 호출 오류:', e);
-  }
-};
+  };
 
   // 새 일반 세션 생성
   const ensureSessionId = async () => {
@@ -618,7 +623,7 @@ const loadChatLogs = async (sessionId, which = 'general') => {
     }
   };
 
-    const refreshConsultAndFocusLatest = async () => {
+  const refreshConsultAndFocusLatest = async () => {
     const list = await loadConsultSessions();
     if (list && list.length) {
       const latest = list[0]; // createdAt DESC 정렬 기준
