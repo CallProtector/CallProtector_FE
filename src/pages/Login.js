@@ -172,11 +172,13 @@ const Login = () => {
     console.log("로그인 요청 시작");
 
     try {
-      // const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-      const response = await axios.post(`http://localhost:8080/api/auth/login`, {
-        email,
-        password
-      },
+      const response = await axios.post(
+        `${API_BASE_URL}/api/auth/login`,
+        {
+          //const response = await axios.post(`http://localhost:8080/api/auth/login`, {
+          email,
+          password,
+        },
         {
           headers: {
             "Content-Type": "application/json",

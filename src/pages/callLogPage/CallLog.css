@@ -283,6 +283,7 @@
   cursor: pointer;
   box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
   position: relative;
+  margin-top: 15px;
 }
 
 .summary-guide {
@@ -364,4 +365,9 @@
   border-color: #5c24af; /* 선택된 버튼의 테두리색 */
   box-shadow: 0 4px 8px rgba(106, 27, 154, 0.2);
   transform: translateY(0);
+}
+
+.ai-summary-error {
+  margin-bottom: 10px;
+  text-align: "center";
 }

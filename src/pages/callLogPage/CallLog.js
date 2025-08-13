@@ -3,6 +3,7 @@
 // import { AiOutlineInfoCircle } from "react-icons/ai";
 // import "./CallLog.css";
 // import { useWebSocket } from "../../contexts/WebSocketContext";
+// import axios from "axios";
 
 // const CallLog = () => {
 //   const location = useLocation();
@@ -11,14 +12,46 @@
 //     sessionInfo,
 //     inboundLogs,
 //     outboundLogs,
-//     interimTranscript,
+//     callLogs,
 //     totalAbuseCnt,
 //     disconnectWebSocket,
+//     isCallEnded,
+//     endCallAndDisconnect,
 //   } = useWebSocket();
 
-//   const [aiSummaryStatus, setAiSummaryStatus] = useState("waiting");
-//   const [summaryData, setSummaryData] = useState({ request: "", change: [] });
 //   const [showAbuseOnly, setShowAbuseOnly] = useState(false);
+//   const [selectedVersion, setSelectedVersion] = useState("v1");
+
+//   const [statusByVersion, setStatusByVersion] = useState({
+//     v1: "waiting",
+//     v2: "waiting",
+//   });
+//   const [summaryByVersion, setSummaryByVersion] = useState({
+//     v1: null,
+//     v2: null,
+//   });
+
+//   const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+//   // "상담 종료하기" 버튼 클릭 시 호출되는 함수
+//   const handleEndCall = () => {
+//     endCallAndDisconnect(); // 통합 종료 함수 호출
+//     console.log("✅ 상담 종료, 요약 가능");
+//   };
+
+//   const handleVersionChange = (version) => {
+//     setSelectedVersion(version);
+//     console.log(`[UI] 버전 변경: ${version}`);
+//   };
+
+//   const getSummaryDescription = (version) => {
+//     if (version === "v1") {
+//       return "빠르고 간단하게 핵심만 요약합니다.";
+//     } else if (version === "v2") {
+//       return "상세하고 정밀한 정보까지 포함해 요약합니다.";
+//     }
+//     return "";
+//   };
 
 //   useEffect(() => {
 //     if (!location.state?.callAccepted) {
@@ -30,28 +63,143 @@
 //     }
 //   }, [location.state, sessionInfo, navigate]);
 
-//   const handleEndCall = () => {
-//     disconnectWebSocket?.(); // 웹소켓 종료
-//     navigate("/main");
-//   };
+//   const handleStartSummary = async () => {
+//     const sessionId = sessionInfo?.callSessionId;
+//     if (!sessionId) {
+//       console.error("[📃상담요약] 세션ID 없음");
+//       return;
+//     }
 
-//   const handleStartSummary = () => {
-//     setAiSummaryStatus("loading");
-//     setTimeout(() => {
-//       setAiSummaryStatus("done");
-//       setSummaryData({
-//         request: "자동이체 → 신용카드 결제로 변경",
-//         change: [
-//           "기존 결제수단: 자동 이체",
-//           "신규 결제수단: 신용카드 (--****-3456)",
-//           "적용 시점: 다음 달 청구분부터",
-//         ],
-//       });
-//     }, 3000);
+//     if (statusByVersion[selectedVersion] !== "waiting") {
+//       console.log(
+//         `[📃상담요약] ${selectedVersion}은 이미 요약되었거나 진행 중입니다.`
+//       );
+//       return;
+//     }
+
+//     setStatusByVersion((prev) => ({ ...prev, [selectedVersion]: "loading" }));
+//     console.log(`[📃상담요약] ${selectedVersion} 요약 시작`);
+
+//     const jwtToken = localStorage.getItem("accessToken");
+//     const baseUrl = `${API_BASE_URL}/api/call-sessions/${sessionId}/summary`;
+//     const apiUrl =
+//       selectedVersion === "v1" ? `${baseUrl}/simple` : `${baseUrl}/detailed`;
+
+//     console.log("[📃상담요약] API_URL:", apiUrl);
+
+//     try {
+//       const res = await axios.post(
+//         apiUrl,
+//         {},
+//         {
+//           headers: {
+//             Authorization: `Bearer ${jwtToken}`,
+//           },
+//         }
+//       );
+
+//       console.log("[📃상담요약 결과]", res.data);
+
+//       if (res.data.isSuccess && res.data.result?.summaryText) {
+//         const text = res.data.result.summaryText;
+//         const requestPart =
+//           text.split("문의사항")[1]?.split("처리 결과")[0] || "";
+//         const changePart = text.split("처리 결과")[1] || "";
+
+//         const parsed = {
+//           request: requestPart.trim(),
+//           change: changePart
+//             .split("\n")
+//             .map((line) => line.trim())
+//             .filter(Boolean),
+//         };
+
+//         setSummaryByVersion((prev) => ({
+//           ...prev,
+//           [selectedVersion]: parsed,
+//         }));
+//         setStatusByVersion((prev) => ({
+//           ...prev,
+//           [selectedVersion]: "done",
+//         }));
+//       } else {
+//         throw new Error("응답 데이터 없음");
+//       }
+//     } catch (err) {
+//       console.error("[❌ 요약 API 호출 실패]", err);
+//       setStatusByVersion((prev) => ({
+//         ...prev,
+//         [selectedVersion]: "error",
+//       }));
+//     }
 //   };
 
 //   const callNumber = sessionInfo?.sessionCode || "세션 없음";
 //   const callDate = sessionInfo?.createdAt || "정보 없음";
+//   const getRole = (track) => (track === "INBOUND" ? "고객" : "상담원");
+
+//   const renderSummaryContent = () => {
+//     const status = statusByVersion[selectedVersion];
+//     const summary = summaryByVersion[selectedVersion];
+//     const isAlreadyDone = summary !== null;
+//     const isError = status === "error";
+
+//     // ✅ 각 버전별 상태와 요약 내용을 독립적으로 관리
+//     if (isError) {
+//       return (
+//         <div className="ai-summary-error">
+//           <p>요약 정보를 불러오는데 실패했습니다. 다시 시도해 주세요.</p>
+//           <button onClick={handleStartSummary} className="summary-button">
+//             다시 시도
+//           </button>
+//         </div>
+//       );
+//     }
+
+//     if (status === "loading") {
+//       return (
+//         <div className="ai-summary-loading">
+//           <div className="spinner" />
+//           <p>통화 내용을 분석중입니다...</p>
+//         </div>
+//       );
+//     }
+
+//     if (isAlreadyDone) {
+//       return (
+//         <div className="ai-summary-result">
+//           <div className="summary-section">
+//             <strong>문의 사항</strong>
+//             <ul>
+//               <li>{summary.request}</li>
+//             </ul>
+//           </div>
+//           <div className="summary-section">
+//             <strong>처리 결과</strong>
+//             <ul>
+//               {summary.change.map((item, idx) => (
+//                 <li key={idx}>{item}</li>
+//               ))}
+//             </ul>
+//           </div>
+//         </div>
+//       );
+//     }
+//     return (
+//       <div className="ai-summary-hint">
+//         <button
+//           className="summary-button"
+//           onClick={handleStartSummary}
+//           disabled={!isCallEnded}
+//         >
+//           {`${selectedVersion.toUpperCase()} 상담 요약하기`}
+//         </button>
+//         {!isCallEnded && (
+//           <p className="summary-guide">통화 종료 후 버튼이 활성화됩니다.</p>
+//         )}
+//       </div>
+//     );
+//   };
 
 //   return (
 //     <div className="total">
@@ -112,21 +260,28 @@
 //           </div>
 
 //           <div className="conversation">
-//             {["상담원", "고객"].map((role, i) => {
-//               const logs = i === 0 ? outboundLogs : inboundLogs;
-//               const filtered = showAbuseOnly
-//                 ? logs.filter((l) => l.isAbuse)
-//                 : logs;
+//             {callLogs.map((log, idx) => {
+//               // 부적절 발언만 보기가 활성화되었을 때, 부적절 발언이 아닌 로그는 건너뛰기
+//               if (showAbuseOnly && !log.isAbuse) {
+//                 return null;
+//               }
 
-//               return filtered.map((log, idx) => (
-//                 <div key={`${role}-${idx}`} className="line">
-//                   <strong>{role}</strong>
-//                   <p className={log.isAbuse ? "warning-highlight" : ""}>
+//               // 💡 isFinal 값에 따라
+//               const lineClass = !log.isFinal ? "line interim-line" : "line";
+//               const textClass = `${log.isAbuse ? "warning-highlight" : ""} ${
+//                 !log.isFinal ? "interim-text" : ""
+//               }`;
+
+//               return (
+//                 <div key={idx} className={lineClass}>
+//                   <strong>{getRole(log.track)}</strong>
+//                   {/* 💡 isAbuse가 true일 때 warning-highlight 클래스 적용 */}
+//                   <p className={textClass}>
 //                     {log.script}
-//                     {log.isAbuse && ` 🚫 (${log.abuseType || "부적절한 발언"})`}
+//                     {log.isAbuse}
 //                   </p>
 //                 </div>
-//               ));
+//               );
 //             })}
 //           </div>
 //         </div>
@@ -134,59 +289,35 @@
 //         <div className="right-part">
 //           <div className="box3">
 //             <h3 className="section-title">AI 상담요약</h3>
-//             {/* 버전 선택 */}
 //             <div className="summary-version">
 //               <span className="version-label">제공 버전</span>
-//               <select className="version-select">
-//                 <option value="v1">v1 - 빠르고 간단하게 핵심만 요약</option>
-//                 <option value="v2">v2 - 상세한 정보까지 포함한 요약</option>
-//               </select>
-//             </div>
-//             <div className="box3-body">
-//               <div className="summary-content">
-//                 {aiSummaryStatus === "waiting" && (
-//                   <div className="ai-summary-hint">
-//                     <button
-//                       className="summary-button"
-//                       onClick={handleStartSummary}
-//                     >
-//                       상담 요약하기
-//                     </button>
-//                     <p className="summary-guide">
-//                       통화가 종료되면 버튼을 눌러 보세요.
-//                     </p>
-//                   </div>
-//                 )}
-
-//                 {aiSummaryStatus === "loading" && (
-//                   <div className="ai-summary-loading">
-//                     <div className="spinner" />
-//                     <p>통화 내용을 분석중입니다...</p>
-//                   </div>
-//                 )}
-
-//                 {aiSummaryStatus === "done" && (
-//                   <div className="ai-summary-result">
-//                     <div className="summary-section">
-//                       <strong>문의 사항</strong>
-//                       <ul>
-//                         <li>{summaryData.request}</li>
-//                       </ul>
-//                     </div>
-//                     <div className="summary-section">
-//                       <strong>처리 결과</strong>
-//                       <ul>
-//                         {summaryData.change.map((item, idx) => (
-//                           <li key={idx}>{item}</li>
-//                         ))}
-//                       </ul>
-//                     </div>
-//                   </div>
-//                 )}
+//               <div className="version-buttons">
+//                 <button
+//                   className={`version-button ${
+//                     selectedVersion === "v1" ? "active" : ""
+//                   }`}
+//                   onClick={() => handleVersionChange("v1")}
+//                 >
+//                   v1
+//                 </button>
+//                 <button
+//                   className={`version-button ${
+//                     selectedVersion === "v2" ? "active" : ""
+//                   }`}
+//                   onClick={() => handleVersionChange("v2")}
+//                 >
+//                   v2
+//                 </button>
 //               </div>
 //             </div>
-//           </div>
+//             <p className="version-description">
+//               {getSummaryDescription(selectedVersion)}
+//             </p>
 
+//             <div className="box3-body">
+//               <div className="summary-content">{renderSummaryContent()}</div>
+//             </div>
+//           </div>
 //           <div className="bottom-button">
 //             <button className="end-button" onClick={handleEndCall}>
 //               상담 종료하기
@@ -201,7 +332,7 @@
 // export default CallLog;
 
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import "./CallLog.css";
 import { useWebSocket } from "../../contexts/WebSocketContext";
@@ -210,6 +341,10 @@ import axios from "axios";
 const CallLog = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { id: callSessionIdParam } = useParams();
+  const isDetailMode = !!callSessionIdParam; // URL에 :id 있으면 상세 모드
+
   const {
     sessionInfo,
     inboundLogs,
@@ -220,6 +355,13 @@ const CallLog = () => {
     isCallEnded,
     endCallAndDisconnect,
   } = useWebSocket();
+
+  // 상세조회 전용 상태 (실시간과 분리)
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [detailSessionInfo, setDetailSessionInfo] = useState(null);
+  const [detailCallLogs, setDetailCallLogs] = useState([]);
+  const [detailTotalAbuseCnt, setDetailTotalAbuseCnt] = useState(0);
 
   const [showAbuseOnly, setShowAbuseOnly] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState("v1");
@@ -256,6 +398,7 @@ const CallLog = () => {
   };
 
   useEffect(() => {
+    if (isDetailMode) return; // 상세 모드에서는 실시간 기록 스킵
     if (!location.state?.callAccepted) {
       console.warn("❗ 통화 상태 정보 없음 (state=null)");
       // navigate("/main"); 잠시 주석처리!!!
@@ -263,10 +406,70 @@ const CallLog = () => {
       console.log("📞 통화중(통화 페이지 이동)");
       console.log("🧾 세션코드:", sessionInfo?.sessionCode);
     }
-  }, [location.state, sessionInfo, navigate]);
+  }, [isDetailMode, location.state, sessionInfo, navigate]);
+
+  // ✅ 상세 조회 API 호출 (/api/call-sessions/{callSessionId})
+  useEffect(() => {
+    if (!isDetailMode) return;
+    const token = localStorage.getItem("accessToken");
+    const fetchDetail = async () => {
+      setDetailLoading(true);
+      setDetailError("");
+      try {
+        const { data } = await axios.get(
+          `${API_BASE_URL}/api/call-sessions/${callSessionIdParam}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const r = data?.result;
+        if (!r) throw new Error("상세 데이터 없음");
+
+        // 상단 세션 정보
+        setDetailSessionInfo(r.sessionInfo || null);
+        setDetailTotalAbuseCnt(r.sessionInfo?.totalAbuseCnt ?? 0);
+
+        // 기록을 기존 UI 포맷으로 매핑
+        const mapped = (r.scriptHistory || []).map((h) => ({
+          track: h.speaker === "INBOUND" ? "INBOUND" : "OUTBOUND",
+          script: h.text,
+          isFinal: true,
+          isAbuse: !!h.isAbuse,
+          abuseType: h.abuseType,
+          timestamp: h.timestamp,
+        }));
+        setDetailCallLogs(mapped);
+
+        // 요약 선반영 (있을 경우)
+        const parseSummary = (text) => {
+          if (!text) return null;
+          const req = text.split("문의사항")[1]?.split("처리 결과")[0] || "";
+          const change = (text.split("처리 결과")[1] || "")
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          return { request: req.trim(), change };
+        };
+        const v1 = parseSummary(r.aiSummary?.simple);
+        const v2 = parseSummary(r.aiSummary?.detailed);
+        setSummaryByVersion({ v1, v2 });
+        setStatusByVersion({
+          v1: v1 ? "done" : "waiting",
+          v2: v2 ? "done" : "waiting",
+        });
+      } catch (e) {
+        console.error("[상세조회 실패]", e);
+        setDetailError("상세 정보를 불러오지 못했습니다.");
+      } finally {
+        setDetailLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [isDetailMode, callSessionIdParam, API_BASE_URL]);
 
   const handleStartSummary = async () => {
-    const sessionId = sessionInfo?.callSessionId;
+    const sessionId = isDetailMode
+      ? Number(callSessionIdParam)
+      : sessionInfo?.callSessionId;
+
     if (!sessionId) {
       console.error("[📃상담요약] 세션ID 없음");
       return;
@@ -328,7 +531,20 @@ const CallLog = () => {
         throw new Error("응답 데이터 없음");
       }
     } catch (err) {
-      console.error("[❌ 요약 API 호출 실패]", err);
+      if (err.response) {
+        // 서버 응답이 있을 경우
+        console.error("[❌ 요약 API 호출 실패 - 서버 응답 있음]", {
+          status: err.response.status,
+          data: err.response.data,
+        });
+      } else if (err.request) {
+        // 요청은 갔지만 응답이 없는 경우
+        console.error("[❌ 요약 API 호출 실패 - 응답 없음]", err.request);
+      } else {
+        // 요청 자체에서 에러가 난 경우
+        console.error("[❌ 요약 API 호출 실패 - 요청 설정 오류]", err.message);
+      }
+
       setStatusByVersion((prev) => ({
         ...prev,
         [selectedVersion]: "error",
@@ -336,8 +552,16 @@ const CallLog = () => {
     }
   };
 
-  const callNumber = sessionInfo?.sessionCode || "세션 없음";
-  const callDate = sessionInfo?.createdAt || "정보 없음";
+  // 화면 표시는 상세모드 값 우선
+  const callNumber = isDetailMode
+    ? detailSessionInfo?.callSessionCode
+    : sessionInfo?.sessionCode || "세션 없음";
+  const callDate = isDetailMode
+    ? detailSessionInfo?.createdAt
+    : sessionInfo?.createdAt || "정보 없음";
+  const abuseCount = isDetailMode ? detailTotalAbuseCnt : totalAbuseCnt;
+  const logsForRender = isDetailMode ? detailCallLogs : callLogs;
+
   const getRole = (track) => (track === "INBOUND" ? "고객" : "상담원");
 
   const renderSummaryContent = () => {
@@ -346,11 +570,19 @@ const CallLog = () => {
     const isAlreadyDone = summary !== null;
     const isError = status === "error";
 
+    // 상세: waiting이면 클릭 가능 / 실시간: 통화 종료 + waiting이면 클릭 가능
+    const canClickSummary = isDetailMode
+      ? status === "waiting"
+      : isCallEnded && status === "waiting";
+
     // ✅ 각 버전별 상태와 요약 내용을 독립적으로 관리
     if (isError) {
       return (
         <div className="ai-summary-error">
-          <p>요약 정보를 불러오는데 실패했습니다. 다시 시도해 주세요.</p>
+          <p>
+            요약 정보를 불러오는데 실패했습니다. <br />
+            다시 시도해 주세요.
+          </p>
           <button onClick={handleStartSummary} className="summary-button">
             다시 시도
           </button>
@@ -392,12 +624,15 @@ const CallLog = () => {
         <button
           className="summary-button"
           onClick={handleStartSummary}
-          disabled={!isCallEnded}
+          disabled={!canClickSummary}
         >
           {`${selectedVersion.toUpperCase()} 상담 요약하기`}
         </button>
-        {!isCallEnded && (
+        {!isDetailMode && !isCallEnded && (
           <p className="summary-guide">통화 종료 후 버튼이 활성화됩니다.</p>
+        )}
+        {isDetailMode && status !== "waiting" && (
+          <p className="summary-guide">해당 버전 요약이 이미 생성되었습니다.</p>
         )}
       </div>
     );
@@ -414,30 +649,29 @@ const CallLog = () => {
         </div>
 
         <div className="right-info">
-          <span className="warning-count">누적 경고: {totalAbuseCnt}회</span>
+          <span className="warning-count">누적 경고: {abuseCount}회</span>{" "}
           <div className="warning-bar">
             <div
               className="bar-fill"
               style={{
-                width: `${(totalAbuseCnt / 3) * 100}%`,
+                width: `${(abuseCount / 3) * 100}%`,
                 backgroundColor:
-                  totalAbuseCnt === 1
+                  abuseCount === 1
                     ? "#ffd700"
-                    : totalAbuseCnt === 2
+                    : abuseCount === 2
                     ? "#ff8c00"
-                    : totalAbuseCnt >= 3
+                    : abuseCount >= 3
                     ? "#ff0000"
                     : "#f1eefc",
               }}
             ></div>
           </div>
-
-          {totalAbuseCnt > 0 && (
+          {abuseCount > 0 && (
             <div className="abuse-warning-toggle">
               <button onClick={() => setShowAbuseOnly((prev) => !prev)}>
                 {showAbuseOnly
                   ? "⚠️ 전체 보기"
-                  : `⚠️ 부적절 발언 보기 (${totalAbuseCnt}/3)`}
+                  : `⚠️ 부적절 발언 보기 (${abuseCount}/3)`}
               </button>
             </div>
           )}
@@ -462,7 +696,7 @@ const CallLog = () => {
           </div>
 
           <div className="conversation">
-            {callLogs.map((log, idx) => {
+            {logsForRender.map((log, idx) => {
               // 부적절 발언만 보기가 활성화되었을 때, 부적절 발언이 아닌 로그는 건너뛰기
               if (showAbuseOnly && !log.isAbuse) {
                 return null;
@@ -521,7 +755,15 @@ const CallLog = () => {
             </div>
           </div>
           <div className="bottom-button">
-            <button className="end-button" onClick={handleEndCall}>
+            <button
+              className="end-button"
+              onClick={handleEndCall}
+              disabled={isDetailMode} // 상세 모드일 때 버튼 비활성화
+              style={{
+                opacity: isDetailMode ? 0.5 : 1, // 흐리게 표시
+                cursor: isDetailMode ? "not-allowed" : "pointer",
+              }}
+            >
               상담 종료하기
             </button>
           </div>
