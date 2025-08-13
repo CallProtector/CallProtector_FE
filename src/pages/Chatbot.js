@@ -675,6 +675,14 @@ const Chatbot = () => {
     return null;
   };
 
+  const chatBodyRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   return (
     <Container>
       <Sidebar>
@@ -920,7 +928,7 @@ const Chatbot = () => {
                     : ' '}
               </ChatDate>
             </ChatHeader>
-            <ChatBody>
+            <ChatBody ref={chatBodyRef}>
               {messages.map((msg, idx) => (
                 <ChatBubble
                   key={idx}
@@ -936,6 +944,7 @@ const Chatbot = () => {
                 </ChatBubble>
               ))}
             </ChatBody>
+
           </>
         ) : (
           <ChatBody>
