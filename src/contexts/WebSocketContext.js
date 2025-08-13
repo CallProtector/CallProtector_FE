@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { playBeep, primeBeep } from "../utils/beep";
+import { duckTwilioOutput } from "../utils/duckTwilioOutput";
 
 const WebSocketContext = createContext();
 
@@ -98,6 +99,9 @@ export const WebSocketProvider = ({ children }) => {
           // ✅ 서버 비프 트리거 수신 → 즉시 로컬 비프 재생
           case "beep": {
             const ms = Number(data.durationMs) || 1000;
+            // 1) 통화 오디오 잠깐 음소거 (상담원 귀에만)
+            duckTwilioOutput(ms);
+            // 2) 비프 재생 (Web Audio – 별 경로)
             playBeep(ms);
             break;
           }
