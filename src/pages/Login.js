@@ -160,12 +160,6 @@ const Login = () => {
   const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-  // // ✅ 로그인 페이지 접근 시 이전 accessToken 제거
-  // useEffect(() => {
-  //   localStorage.removeItem("accessToken");
-  //   localStorage.removeItem("userId");
-  // }, []);
-
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -186,10 +180,12 @@ const Login = () => {
         }
       );
 
-      const { token, id } = response.data.result;
+      const { token, id, name } = response.data.result;
 
       localStorage.setItem("accessToken", token);
       localStorage.setItem("userId", id);
+      localStorage.setItem("userName", name);
+      console.log("userName:", localStorage.getItem("userName"));
 
       console.log("accessToken:", localStorage.getItem("accessToken"));
       console.log("userId:", localStorage.getItem("userId"));
