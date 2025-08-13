@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { IoIosClose } from 'react-icons/io';
 
@@ -122,16 +122,6 @@ const StartButton = styled.button`
   &:hover:not(:disabled) { background-color: #6946e7; }
 `;
 
-const MoreButton = styled.button`
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-size: 15px;
-  border: 1px solid #ddd;
-  background: #fff;
-  cursor: pointer;
-  &:disabled { opacity: .5; cursor: not-allowed; }
-`;
-
 const EmptyState = styled.div`
   text-align: center;
   color: #777;
@@ -142,11 +132,8 @@ function formatDate(s) {
   try { return new Date(s).toLocaleString(); } catch { return s; }
 }
 
-/**
- * @param {{ onClose: () => void, onSelect?: (session: {id:number, callSessionCode:string, createdAt:string, category:string}) => void }} props
- */
 const ChatListModal = ({ onClose, onSelect }) => {
-  const [rows, setRows] = useState([]);      // [{id, callSessionCode, createdAt, category}]
+  const [rows, setRows] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [cursorId, setCursorId] = useState(null);
   const [hasNext, setHasNext] = useState(false);
@@ -235,7 +222,26 @@ const ChatListModal = ({ onClose, onSelect }) => {
     [rows, selectedId]
   );
 
-  // ===== 분석 시작 (SSE) =====
+  // 무한 스크롤 감지
+  const observerRef = useRef(null);
+  useEffect(() => {
+    if (!hasNext) return;
+    if (observerRef.current) observerRef.current.disconnect();
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !loading) {
+        fetchPage({ cursor: cursorId });
+      }
+    }, { threshold: 1.0 });
+
+    const sentinel = document.querySelector('#scrollSentinel');
+    if (sentinel) observer.observe(sentinel);
+
+    observerRef.current = observer;
+
+    return () => observer.disconnect();
+  }, [cursorId, hasNext, loading]);
+
   const startAnalyze = () => {
     if (!selectedRow) return;
 
@@ -250,30 +256,22 @@ const ChatListModal = ({ onClose, onSelect }) => {
     setAnalyzeMsg('분석을 시작합니다…');
     setErr('');
 
-    // ✅ 핵심 수정사항: 서버가 요구하는 숫자 ID (selectedRow.id)를 사용합니다.
     const url = `${ANALYZE_API_BASE}/${encodeURIComponent(selectedRow.id)}?token=${encodeURIComponent(token)}`;
-    console.log('[analyze SSE URL]', url);
-
-   const es = new EventSource(url);
+    const es = new EventSource(url);
     let buffer = '';
     let ended = false;
 
     es.onmessage = (ev) => {
       const chunk = ev.data || '';
-      // 진행상황 텍스트는 화면에 보여주기(원하면 생략 가능)
       if (!chunk.startsWith('[JSON]') && chunk !== '[END]') {
-        setAnalyzeMsg(prev => (prev ? prev + '' : '') ); // 깔끔히 유지하고 싶으면 noop
-        console.log('Received stream data (ignored):', chunk);
         return;
       }
 
-      // JSON payload
       if (chunk.startsWith('[JSON]')) {
         buffer += chunk.replace('[JSON]', '').trim();
         return;
       }
 
-      // 스트림 종료 신호
       if (chunk === '[END]') {
         ended = true;
         try {
@@ -282,20 +280,16 @@ const ChatListModal = ({ onClose, onSelect }) => {
           const jsonStr   = jsonStart >= 0 ? buffer.substring(jsonStart, jsonEnd) : '{}';
           const data      = JSON.parse(jsonStr || '{}');
 
-          // 명세상 성공 포맷: {"errorCode": null, "message": "SUCCESS", "result": null}
           if (!data.errorCode && (data.message === 'SUCCESS' || !data.message)) {
             setAnalyzeMsg('✅ 분석 완료! 채팅을 열고 있어요…');
             setAnalyzing(false);
             es.close();
-            // 부모에게 “완료” 신호 전달 → 부모가 세션 새로고침 & 최신 세션 선택
             onSelect && onSelect(selectedRow);
             onClose && onClose();
             return;
           }
-          // 서버 메시지 전달
           setErr(data.message || '분석 결과 처리 중 오류');
         } catch (e) {
-          console.warn('Analyze JSON parse failed:', e);
           setErr('분석 응답 파싱 실패');
         } finally {
           setAnalyzing(false);
@@ -305,7 +299,6 @@ const ChatListModal = ({ onClose, onSelect }) => {
     };
 
     es.onerror = () => {
-      // 정상 종료에도 onerror가 올 수 있으니 ended로 구분
       if (!ended) {
         setErr('SSE 연결 오류가 발생했습니다.');
         setAnalyzing(false);
@@ -340,9 +333,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
               {rows.map((c) => (
                 <TableRow
                   key={c.id}
-                  onDoubleClick={() => {
-                    setSelectedId(c.id);
-                  }}
+                  onDoubleClick={() => setSelectedId(c.id)}
                   style={{ cursor: 'pointer' }}
                 >
                   <TableCell>
@@ -367,17 +358,10 @@ const ChatListModal = ({ onClose, onSelect }) => {
               {connectionMsg || '요청은 정상 처리되었습니다.'}
             </EmptyState>
           )}
+          {hasNext && <div id="scrollSentinel" style={{ height: '20px' }} />}
         </TableWrapper>
 
         <Footer>
-          {hasNext && (
-            <MoreButton
-              onClick={() => fetchPage({ cursor: cursorId })}
-              disabled={loading || analyzing}
-            >
-              더 보기
-            </MoreButton>
-          )}
           <StartButton
             disabled={!selectedRow || analyzing}
             onClick={startAnalyze}
