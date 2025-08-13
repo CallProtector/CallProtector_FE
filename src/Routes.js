@@ -50,8 +50,13 @@ function AppRouter() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/main" element={<Main />} />
-          <Route path="/callLog" element={<CallLog />} />
+          {/*<Route path="/callLog" element={<CallLog />} />*/}
           <Route path="/callList" element={<CallList />} />
+          {/* ✅ 실시간 통화 화면 (WebSocket 모드) */}
+          <Route path="/callLog" element={<CallLog />} />
+          {/* ✅ 상담 내역 상세 (저장 기록 보기) */}
+          <Route path="/sessions/:id" element={<CallLog />} />
+
           <Route path="/chatbot" element={<Chatbot />} />
         </Routes>
       </ContentWrapper>

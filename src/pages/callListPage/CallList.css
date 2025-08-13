@@ -96,7 +96,7 @@
 .tabs {
   display: flex;
   gap: 12px;
-} 
+}
 .call-list-container {
   display: flex;
   flex-direction: column;
@@ -135,6 +135,7 @@
   justify-content: space-between;
   margin: 16px 0;
   font-size: 16px;
+  justify-content: flex-end;
 }
 
 .result-count {
@@ -162,4 +163,39 @@
   border-radius: 6px;
   background-color: white;
   color: #333;
+}
+
+.highlight {
+  background-color: #f7ff00;
+  font-weight: bold;
+  padding: 2px 0;
+  border-radius: 3px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination button {
+  padding: 10px 15px;
+  margin: 0 5px;
+  border: 1px solid #ccc;
+  background-color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5; /* 비활성화 상태일 때 투명도 적용 */
+  background-color: #eee;
+  border-color: #ddd;
 }
