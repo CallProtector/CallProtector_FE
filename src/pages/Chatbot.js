@@ -3,6 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { FiSend, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { FaPlus } from 'react-icons/fa';
 import ChatListModal from '../components/Modal/ChatListModal';
+import botAvatar from '../assets/images/bot-avatar.png';
 
 const Container = styled.div`
   display: flex;
@@ -163,6 +164,29 @@ const ChatBody = styled.div`
   flex-direction: column;
 `;
 
+const ChatBubbleContainer = styled.div`
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  justify-content: ${({ fromUser }) => (fromUser ? 'flex-end' : 'flex-start')};
+`;
+
+const ProfileImage = styled.img`
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 50%;
+  margin-right: 10px;
+`;
+
+// const ChatBubble = styled.div`
+//   background-color: ${({ fromUser }) => (fromUser ? '#DCF8C6' : '#FFF')};
+//   padding: 10px 14px;
+//   border-radius: 12px;
+//   max-width: 60%;
+// `;
+
+
 const ChatBubble = styled.div`
   max-width: 70%;
   padding: 15px;
@@ -303,6 +327,15 @@ const Chatbot = () => {
     }
     return g;
   }, [generalChatSessions]);
+
+  // const ChatBubble = ({ fromUser, children }) => (
+  //   <ChatBubbleWrapper>
+  //     {!fromUser && (
+  //       <ProfileImage src="/images/bot-avatar.png" alt="Bot Avatar" />
+  //     )}
+  //     <Bubble fromUser={fromUser}>{children}</Bubble>
+  //   </ChatBubbleWrapper>
+  // );
 
   // 상담별 세션 그룹핑
   const groupedConsult = React.useMemo(() => {
@@ -930,18 +963,14 @@ const Chatbot = () => {
             </ChatHeader>
             <ChatBody ref={chatBodyRef}>
               {messages.map((msg, idx) => (
-                <ChatBubble
-                  key={idx}
-                  fromUser={msg.fromUser}
-                  loading={msg.loading}
-                  dangerouslySetInnerHTML={
-                    msg.loading
-                      ? undefined
-                      : { __html: msg.text?.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
-                  }
-                >
-                  {msg.loading && <LoadingDots />}
-                </ChatBubble>
+                <ChatBubbleContainer key={idx} fromUser={msg.fromUser}>
+                  {!msg.fromUser && (
+                    <ProfileImage src={botAvatar} alt="Bot Avatar" />
+                  )}
+                  <ChatBubble fromUser={msg.fromUser} loading={msg.loading}>
+                    {msg.loading ? <LoadingDots /> : msg.text}
+                  </ChatBubble>
+                </ChatBubbleContainer>
               ))}
             </ChatBody>
 
