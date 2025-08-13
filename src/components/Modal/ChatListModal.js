@@ -242,6 +242,8 @@ const ChatListModal = ({ onClose, onSelect }) => {
     return () => observer.disconnect();
   }, [cursorId, hasNext, loading]);
 
+  const notifiedRef = useRef(false);
+
   const startAnalyze = () => {
     if (!selectedRow) return;
 
@@ -281,11 +283,16 @@ const ChatListModal = ({ onClose, onSelect }) => {
           const data      = JSON.parse(jsonStr || '{}');
 
           if (!data.errorCode && (data.message === 'SUCCESS' || !data.message)) {
-            setAnalyzeMsg('✅ 분석 완료! 채팅을 열고 있어요…');
+             setAnalyzeMsg('');     // 로그는 남기지 않음(원하면 유지)
             setAnalyzing(false);
             es.close();
             onSelect && onSelect(selectedRow);
             onClose && onClose();
+            if (!notifiedRef.current) {
+              notifiedRef.current = true;
+              // UI 전환이 먼저 반영된 뒤 얼럿 표시
+              setTimeout(() => { alert('분석이 완료되었습니다.'); }, 0);
+            }
             return;
           }
           setErr(data.message || '분석 결과 처리 중 오류');
