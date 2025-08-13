@@ -30,7 +30,8 @@ const Main = () => {
       <div style={styles.content}>
         <div style={styles.textBox}>
           <p style={styles.text}>
-            <span style={styles.highlight}>온음</span>이{" "}
+            <span style={styles.highlight}>온음</span>이
+            <br />
             {name ? `${name} 상담원님의` : "상담원님의"}
             <br />
             건강한 근무 환경을
@@ -45,8 +46,8 @@ const Main = () => {
             loop
             play
             animationData={contactUsLottie}
-            style={{ width: 900, height: 360 }}
-            speed={1} // 필요시 속도 조절
+            style={{ width: "100%", height: "auto" }}
+            speed={1}
           />
         </div>
       </div>
@@ -68,28 +69,31 @@ const styles = {
     flex: 1,
     display: "flex",
     alignItems: "center",
+    justifyContent: "space-between",
+    padding: "0 80px",
+    gap: "40px", // 텍스트-이미지 간 간격
+    flexWrap: "wrap", // 화면 작으면 세로 배치
   },
   textBox: {
-    paddingLeft: "80px",
+    flex: "1 1 50%", // 최소 50% 차지
     textAlign: "left",
-    lineHeight: "1.4",
+    lineHeight: "1.7",
+    maxWidth: "600px", // 최대 폭 제한
   },
   text: {
-    fontSize: "68px",
-    fontWeight: "700",
-    color: "#111",
-    margin: 0,
-    whiteSpace: "pre-line",
+    fontSize: "60px",
+    fontWeight: "bold",
+    color: "black",
   },
   highlight: {
     color: "#e6007e",
   },
   lottieBox: {
+    flex: "0 0 900px", // 고정 폭
+    maxWidth: "900px", // 최대 폭 제한
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 900,
-    minHeight: 500,
   },
 };
 
