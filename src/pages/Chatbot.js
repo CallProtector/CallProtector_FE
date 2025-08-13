@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { FiSend, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { FaPlus } from 'react-icons/fa';
 import ChatListModal from '../components/Modal/ChatListModal';
@@ -173,6 +173,14 @@ const ChatBubble = styled.div`
   font-size: 17px;
   white-space: pre-wrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  ${({ loading }) =>
+    loading &&
+    `
+    display: flex;
+    align-items: center;
+    color: #888;
+  `}
 `;
 
 const EmptyMessage = styled.div`
@@ -218,6 +226,25 @@ const SendButton = styled.button`
   align-items: center;
   justify-content: center;
 `;
+
+const typingAnimation = keyframes`
+  0% { content: '응답중'; }
+  25% { content: '응답중.'; }
+  50% { content: '응답중..'; }
+  75% { content: '응답중...'; }
+  100% { content: '응답중....'; }
+`;
+
+const LoadingDots = styled.span`
+  &::after {
+    display: inline-block;
+    animation: ${typingAnimation} 1s infinite steps(1);
+    content: '';
+  }
+`;
+
+
+
 
 const Chatbot = () => {
   const [activeTab, setActiveTab] = useState('일반');
@@ -472,18 +499,18 @@ const Chatbot = () => {
   }, [activeTab]);
 
   useEffect(() => {
-  if (!selected) return;
+    if (!selected) return;
 
-  // 여기서만 로딩 여부 판단
-  const map = activeTab === '일반' ? generalChatMap : consultChatMap;
-  if (!Array.isArray(map[selected]) || map[selected].length === 0) {
-    const isNumeric = /^\d+$/.test(String(selected));
-    if (isNumeric) {
-      loadChatLogs(selected, activeTab === '일반' ? 'general' : 'consult');
+    // 여기서만 로딩 여부 판단
+    const map = activeTab === '일반' ? generalChatMap : consultChatMap;
+    if (!Array.isArray(map[selected]) || map[selected].length === 0) {
+      const isNumeric = /^\d+$/.test(String(selected));
+      if (isNumeric) {
+        loadChatLogs(selected, activeTab === '일반' ? 'general' : 'consult');
+      }
     }
-  }
-  // map 제거 → 불필요 재호출 방지
-}, [selected, activeTab]);
+    // map 제거 → 불필요 재호출 방지
+  }, [selected, activeTab]);
 
 
   const startNewChat = () => {
@@ -504,24 +531,18 @@ const Chatbot = () => {
   const openSseAndStream = ({ url, sessionId }) => {
     const eventSource = new EventSource(url);
     let buffer = '';
+    let firstChunkReceived = false;
 
-    const appendBotMessage = (chunk) => {
+    const replaceLoadingWith = (text) => {
       setCurrentChatMap((prev) => {
-        const existing = prev[sessionId] || [];
-        const lastMsg = existing[existing.length - 1];
-        if (lastMsg && !lastMsg.fromUser) {
-          const updated = [...existing];
-          updated[updated.length - 1] = {
-            ...lastMsg,
-            text: lastMsg.text + chunk,
-          };
+        const msgs = prev[sessionId] || [];
+        const idx = msgs.findIndex((m) => m.loading);
+        if (idx !== -1) {
+          const updated = [...msgs];
+          updated[idx] = { fromUser: false, text };
           return { ...prev, [sessionId]: updated };
-        } else {
-          return {
-            ...prev,
-            [sessionId]: [...existing, { fromUser: false, text: chunk }],
-          };
         }
+        return prev;
       });
     };
 
@@ -533,21 +554,13 @@ const Chatbot = () => {
           buffer = buffer.trim();
           const jsonStart = buffer.indexOf('{');
           const jsonEnd = buffer.lastIndexOf('}') + 1;
-          const jsonString = buffer.substring(jsonStart, jsonEnd).trim();
-          const parsed = JSON.parse(jsonString);
-
+          const parsed = JSON.parse(buffer.substring(jsonStart, jsonEnd).trim());
           if (parsed.answer) {
-            const formatted = formatBotMessage(
-              parsed.answer,
-              parsed.sourcePages
-            );
-            appendBotMessage(formatted);
+            replaceLoadingWith(formatBotMessage(parsed.answer, parsed.sourcePages));
           }
         } catch (e) {
-          console.warn('JSON 파싱 실패:', e);
-          appendBotMessage('[⚠️ 응답 파싱 실패]');
+          replaceLoadingWith('[⚠️ 응답 파싱 실패]');
         }
-
         eventSource.close();
         return;
       }
@@ -558,11 +571,11 @@ const Chatbot = () => {
     };
 
     eventSource.onerror = (e) => {
-      console.error('⛔ SSE 연결 오류', e);
-      appendBotMessage('[⛔ 연결 실패]');
+      replaceLoadingWith('[⛔ 연결 실패]');
       eventSource.close();
     };
   };
+
 
   // 메시지 전송
   const handleSend = async () => {
@@ -570,8 +583,6 @@ const Chatbot = () => {
     if (!text) return;
 
     const token = localStorage.getItem('accessToken');
-
-    // 탭별 세션 아이디 결정 + 유저 메시지 먼저 append
     let sessionId;
     if (activeTab === '일반') {
       sessionId = await ensureSessionId();
@@ -580,28 +591,22 @@ const Chatbot = () => {
         alert('상담별 탭에서는 세션을 선택한 뒤 메시지를 전송하세요.');
         return;
       }
-      sessionId = selected; // 상담별: callChatSessionId
+      sessionId = selected;
     }
 
     const userMessage = { fromUser: true, text };
-    const chatMap = activeTab === '일반' ? generalChatMap : consultChatMap;
+    const loadingMessage = { fromUser: false, loading: true }; // 로딩 말풍선
 
-    if (!chatMap[sessionId]) {
-      setCurrentChatMap((prev) => ({ ...prev, [sessionId]: [userMessage] }));
-    } else {
-      setCurrentChatMap((prev) => ({
-        ...prev,
-        [sessionId]: [...prev[sessionId], userMessage],
-      }));
-    }
+    setCurrentChatMap((prev) => ({
+      ...prev,
+      [sessionId]: [...(prev[sessionId] || []), userMessage, loadingMessage],
+    }));
 
     setInputText('');
     setTempSessionId(null);
 
     try {
       const encoded = encodeURIComponent(text);
-
-      // ✅ 탭에 따라 전송 API 분기
       const url =
         activeTab === '일반'
           ? `http://localhost:8080/api/chat/stream?sessionId=${sessionId}&question=${encoded}&token=${token}`
@@ -916,55 +921,60 @@ const Chatbot = () => {
               </ChatDate>
             </ChatHeader>
             <ChatBody>
-            {messages.map((msg, idx) => (
-              <ChatBubble
-                key={idx}
-                fromUser={msg.fromUser}
-                dangerouslySetInnerHTML={{
-                  __html: msg.text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                }}
-              />
-            ))}
+              {messages.map((msg, idx) => (
+                <ChatBubble
+                  key={idx}
+                  fromUser={msg.fromUser}
+                  loading={msg.loading}
+                  dangerouslySetInnerHTML={
+                    msg.loading
+                      ? undefined
+                      : { __html: msg.text?.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
+                  }
+                >
+                  {msg.loading && <LoadingDots />}
+                </ChatBubble>
+              ))}
+            </ChatBody>
+          </>
+        ) : (
+          <ChatBody>
+            <EmptyMessage>
+              {activeTab === '일반' ? (
+                <>
+                  새로운 채팅을 시작해보세요.
+                  <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
+                  아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
+                </>
+              ) : (
+                <>
+                  상담별 세션을 선택하거나 ‘상담 내역 불러오기’를 눌러 목록을 불러오세요.
+                </>
+              )}
+            </EmptyMessage>
           </ChatBody>
-      </>
-      ) : (
-      <ChatBody>
-        <EmptyMessage>
-          {activeTab === '일반' ? (
-            <>
-              새로운 채팅을 시작해보세요.
-              <br /> 왼쪽의 '새로운 채팅' 버튼을 누르거나
-              아래 입력창에 질문을 입력하면 자동으로 새 대화가 생성됩니다.
-            </>
-          ) : (
-            <>
-              상담별 세션을 선택하거나 ‘상담 내역 불러오기’를 눌러 목록을 불러오세요.
-            </>
-          )}
-        </EmptyMessage>
-      </ChatBody>
         )}
 
-      <InputArea>
-        <InputWrapper>
-          <Input
-            placeholder={
-              activeTab === '일반'
-                ? '메시지를 입력하세요'
-                : '상담별 탭은 세션 선택 후 메시지 전송 가능합니다'
-            }
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSend();
-            }}
-          />
-          <SendButton onClick={handleSend}>
-            <FiSend size={24} />
-          </SendButton>
-        </InputWrapper>
-      </InputArea>
-    </ChatArea>
+        <InputArea>
+          <InputWrapper>
+            <Input
+              placeholder={
+                activeTab === '일반'
+                  ? '메시지를 입력하세요'
+                  : '상담별 탭은 세션 선택 후 메시지 전송 가능합니다'
+              }
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSend();
+              }}
+            />
+            <SendButton onClick={handleSend}>
+              <FiSend size={24} />
+            </SendButton>
+          </InputWrapper>
+        </InputArea>
+      </ChatArea>
     </Container >
   );
 };
