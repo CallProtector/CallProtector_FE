@@ -4,6 +4,7 @@ import { FiSend, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { FaPlus } from 'react-icons/fa';
 import ChatListModal from '../components/Modal/ChatListModal';
 import botAvatar from '../assets/images/bot-avatar.png';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Container = styled.div`
   display: flex;
@@ -179,13 +180,6 @@ const ProfileImage = styled.img`
   margin-right: 10px;
 `;
 
-// const ChatBubble = styled.div`
-//   background-color: ${({ fromUser }) => (fromUser ? '#DCF8C6' : '#FFF')};
-//   padding: 10px 14px;
-//   border-radius: 12px;
-//   max-width: 60%;
-// `;
-
 
 const ChatBubble = styled.div`
   max-width: 70%;
@@ -271,6 +265,12 @@ const LoadingDots = styled.span`
 
 
 const Chatbot = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tabFromUrl = searchParams.get("tab");
+  const sessionIdFromUrl = searchParams.get("sessionId");
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
 
@@ -294,6 +294,18 @@ const Chatbot = () => {
       : consultChatSessions.find((s) => String(s.sessionId) === String(selected));
 
   // 날짜 유틸
+
+  // === 시간 파서 유틸 ===
+  const parseServerTime = (ts) => {
+    if (!ts) return null;
+    // 이미 Z나 +09:00 같은 오프셋이 있으면 그대로 처리
+    if (/[zZ]$/.test(ts) || /[+-]\d{2}:\d{2}$/.test(ts)) {
+      return new Date(ts);
+    }
+    // naive datetime → UTC로 간주
+    return new Date(`${ts}Z`);
+  };
+
   const isToday = (d) => {
     const now = new Date();
     return (
@@ -320,7 +332,7 @@ const Chatbot = () => {
   const groupedGeneral = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
     for (const s of generalChatSessions) {
-      const dt = new Date(s.startTime);
+      const dt = parseServerTime(s.startTime);
       if (isToday(dt)) g.today.push(s);
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
@@ -328,20 +340,12 @@ const Chatbot = () => {
     return g;
   }, [generalChatSessions]);
 
-  // const ChatBubble = ({ fromUser, children }) => (
-  //   <ChatBubbleWrapper>
-  //     {!fromUser && (
-  //       <ProfileImage src="/images/bot-avatar.png" alt="Bot Avatar" />
-  //     )}
-  //     <Bubble fromUser={fromUser}>{children}</Bubble>
-  //   </ChatBubbleWrapper>
-  // );
 
   // 상담별 세션 그룹핑
   const groupedConsult = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
     for (const s of consultChatSessions) {
-      const dt = new Date(s.createdAt);
+      const dt = parseServerTime(s.createdAt);
       if (isToday(dt)) g.today.push(s);
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
@@ -369,7 +373,7 @@ const Chatbot = () => {
   // 일반 세션 목록 로드
   const loadGeneralSessions = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/chat-sessions/list', {
+      const res = await fetch(`${API_BASE_URL}/api/chat-sessions/list`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       });
@@ -381,7 +385,12 @@ const Chatbot = () => {
             new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
         );
 
-        setGeneralChatSessions(list);
+        setGeneralChatSessions(
+          list.map(s => ({
+            ...s,
+            startTime: parseServerTime(s.startTime)?.toISOString()
+          }))
+        );
 
         setGeneralChatMap((prev) => {
           const next = { ...prev };
@@ -402,7 +411,7 @@ const Chatbot = () => {
   const loadConsultSessions = async () => {
     try {
       const res = await fetch(
-        'http://localhost:8080/api/call-chat-sessions/list',
+        `${API_BASE_URL}/api/call-chat-sessions/list`,
         {
           method: 'GET',
           headers: {
@@ -418,7 +427,12 @@ const Chatbot = () => {
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
 
-        setConsultChatSessions(list);
+        setConsultChatSessions(
+          list.map(s => ({
+            ...s,
+            createdAt: parseServerTime(s.createdAt)?.toISOString()
+          }))
+        );
 
         setConsultChatMap((prev) => {
           const next = { ...prev };
@@ -445,10 +459,9 @@ const Chatbot = () => {
       let url;
 
       if (which === 'general') {
-        url = `http://localhost:8080/api/chat-log/session/${sessionId}`;
+        url = `${API_BASE_URL}/api/chat-log/session/${sessionId}`;
       } else {
-        // 상담별 조회
-        url = `http://localhost:8080/api/call-chat-log/session/${sessionId}`;
+        url = `${API_BASE_URL}/api/call-chat-log/session/${sessionId}`;
       }
 
       const res = await fetch(url, {
@@ -457,8 +470,12 @@ const Chatbot = () => {
       });
       const data = await res.json();
 
-      if (res.ok && data.isSuccess && Array.isArray(data.result)) {
-        const logs = [...data.result].sort(
+      const logs = (which === 'consult')
+        ? data.result?.logs || []
+        : data.result || [];
+
+      if (res.ok && data.isSuccess && Array.isArray(logs)) {
+        const sortedLogs = [...logs].sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
 
@@ -480,6 +497,17 @@ const Chatbot = () => {
         const setMap =
           which === 'general' ? setGeneralChatMap : setConsultChatMap;
         setMap((prev) => ({ ...prev, [sessionId]: msgList }));
+
+        // 👉 상담별이면 consultChatSessions에 callSessionId를 병합
+        if (which === 'consult' && data.result?.callSessionId) {
+          setConsultChatSessions((prev) =>
+            prev.map((s) =>
+              String(s.sessionId) === String(sessionId)
+                ? { ...s, callSessionId: data.result.callSessionId }
+                : s
+            )
+          );
+        }
       } else {
         console.warn('대화 로그 조회 실패:', data?.message);
       }
@@ -492,7 +520,7 @@ const Chatbot = () => {
   const ensureSessionId = async () => {
     if (selected && /^\d+$/.test(String(selected))) return selected;
 
-    const res = await fetch('http://localhost:8080/api/chat-sessions', {
+    const res = await fetch(`${API_BASE_URL}/api/chat-sessions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -562,9 +590,9 @@ const Chatbot = () => {
 
   // === 공용 SSE 전송 ===
   const openSseAndStream = ({ url, sessionId }) => {
+    const which = activeTab === '일반' ? 'general' : 'consult';
     const eventSource = new EventSource(url);
     let buffer = '';
-    let firstChunkReceived = false;
 
     const replaceLoadingWith = (text) => {
       setCurrentChatMap((prev) => {
@@ -579,7 +607,20 @@ const Chatbot = () => {
       });
     };
 
-    eventSource.onmessage = (event) => {
+    // ⭐ NEW: 제목 이벤트 즉시 반영
+    eventSource.addEventListener('title', (ev) => {
+      try {
+        const payload = JSON.parse(ev.data); // { sessionId, title }
+        const sid = payload?.sessionId ?? sessionId;
+        const title = payload?.title;
+        applySessionTitle(which, sid, title);
+      } catch (e) {
+        // 무시 (타이틀 파싱 실패해도 메시지 스트림은 계속)
+      }
+    });
+
+    // 기존 메시지 스트림 처리(마지막 JSON만 반영)
+    eventSource.addEventListener('message', (event) => {
       const chunk = event.data;
 
       if (chunk === '[END]') {
@@ -590,6 +631,8 @@ const Chatbot = () => {
           const parsed = JSON.parse(buffer.substring(jsonStart, jsonEnd).trim());
           if (parsed.answer) {
             replaceLoadingWith(formatBotMessage(parsed.answer, parsed.sourcePages));
+          } else {
+            replaceLoadingWith('[⚠️ 응답 형식 없음]');
           }
         } catch (e) {
           replaceLoadingWith('[⚠️ 응답 파싱 실패]');
@@ -601,9 +644,9 @@ const Chatbot = () => {
       if (chunk.startsWith('[JSON]')) {
         buffer = chunk.replace('[JSON]', '').trim();
       }
-    };
+    });
 
-    eventSource.onerror = (e) => {
+    eventSource.onerror = () => {
       replaceLoadingWith('[⛔ 연결 실패]');
       eventSource.close();
     };
@@ -642,8 +685,8 @@ const Chatbot = () => {
       const encoded = encodeURIComponent(text);
       const url =
         activeTab === '일반'
-          ? `http://localhost:8080/api/chat/stream?sessionId=${sessionId}&question=${encoded}&token=${token}`
-          : `http://localhost:8080/api/call-chat/stream?callChatSessionId=${sessionId}&question=${encoded}&token=${token}`;
+          ? `${API_BASE_URL}/api/chat/stream?sessionId=${sessionId}&question=${encoded}&token=${token}`
+          : `${API_BASE_URL}/api/call-chat/stream?callChatSessionId=${sessionId}&question=${encoded}&token=${token}`;
 
       openSseAndStream({ url, sessionId });
     } catch (err) {
@@ -656,7 +699,7 @@ const Chatbot = () => {
     try {
       const raw = localStorage.getItem('accessToken');
       const token = raw ? raw.replace(/^"+|"+$/g, '') : '';
-      const url = `http://localhost:8080/api/call-chat-sessions/by-call-session?callSessionId=${encodeURIComponent(
+      const url = `${API_BASE_URL}/api/call-chat-sessions/by-call-session?callSessionId=${encodeURIComponent(
         callSessionId
       )}`;
       const res = await fetch(url, {
@@ -710,11 +753,31 @@ const Chatbot = () => {
 
   const chatBodyRef = React.useRef(null);
 
+
   React.useEffect(() => {
     if (chatBodyRef.current) {
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const applySessionTitle = (which, sessionId, title) => {
+    if (!sessionId || !title) return;
+
+    if (which === 'general') {
+      setGeneralChatSessions(prev =>
+        prev.map(s =>
+          String(s.sessionId) === String(sessionId) ? { ...s, title } : s
+        )
+      );
+    } else {
+      setConsultChatSessions(prev =>
+        prev.map(s =>
+          String(s.sessionId) === String(sessionId) ? { ...s, title } : s
+        )
+      );
+    }
+  };
+
 
   return (
     <Container>
@@ -743,14 +806,9 @@ const Chatbot = () => {
         {showModal && (
           <ChatListModal
             onClose={() => setShowModal(false)}
-            onSelect={async (row) => {
-              // row.id === callSessionId
-              const s = await ensureCallChatSessionFromCall(row.id);
+            onSelect={async () => {
+              await refreshConsultAndFocusLatest();
               setShowModal(false);
-              if (!s) return;
-              setActiveTab('상담별');
-              setSelected(s.sessionId);
-              await loadChatLogs(s.sessionId, 'consult');
             }}
           />
         )}
@@ -949,15 +1007,26 @@ const Chatbot = () => {
                   style={{
                     visibility: activeTab === '상담별' ? 'visible' : 'hidden',
                   }}
+                  onClick={() => {
+                    if (activeTab !== '상담별') return;
+
+                    const callSessionId = selectedSessionMeta?.callSessionId;
+
+                    if (callSessionId) {
+                      navigate(`/sessions/${callSessionId}`);
+                    } else {
+                      alert("통화 세션 ID가 없습니다. 먼저 대화 로그를 불러와주세요.");
+                    }
+                  }}
                 >
                   통화 내용 보기
                 </CallLogButton>
               </ChatTitle>
               <ChatDate>
                 {activeTab === '일반' && selectedSessionMeta?.startTime
-                  ? new Date(selectedSessionMeta.startTime).toLocaleString()
+                  ? parseServerTime(selectedSessionMeta.startTime)?.toLocaleString()
                   : activeTab === '상담별' && selectedSessionMeta?.createdAt
-                    ? new Date(selectedSessionMeta.createdAt).toLocaleString()
+                    ? parseServerTime(selectedSessionMeta.createdAt)?.toLocaleString()
                     : ' '}
               </ChatDate>
             </ChatHeader>

@@ -63,9 +63,9 @@ const Navbar = () => {
     <NavbarWrapper>
       <Logo onClick={() => navigate('/main')} src={logoImg} alt="온음 로고" />
       <Menu>
-        <MenuItem onClick={() => navigate('/')}>서비스소개</MenuItem>
+        <MenuItem onClick={() => navigate('/')}>서비스 소개</MenuItem>
         <MenuItem onClick={() => navigate('/callList')}>상담내역</MenuItem>
-        <MenuItem onClick={() => navigate('/chatbot')}>AI챗봇</MenuItem>
+        <MenuItem onClick={() => navigate('/chatbot')}>AI 챗봇</MenuItem>
       </Menu>
       <LogoutButton>로그아웃</LogoutButton>
     </NavbarWrapper>
