@@ -111,8 +111,7 @@ const Signup = () => {
 
   const handleEmailSend = async () => {
     try {
-      // const response = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
-      const response = await axios.post(`http://localhost:8080/api/auth/send-code`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
         email
       }, {
         headers: {
@@ -120,25 +119,36 @@ const Signup = () => {
         }
       });
 
+      // 성공 처리
       if (response.data?.isSuccess) {
         alert(resendCount > 0 ? '인증번호가 재발송되었습니다.' : '인증번호가 발송되었습니다.');
         setStep(2);
         setResendCount(prev => prev + 1);
         setMessage(response.data.result);
-      } else {
-        alert(`인증 요청 실패: ${response.data.message || '알 수 없는 오류'}`);
       }
 
     } catch (error) {
       console.error('이메일 인증 요청 실패:', error);
-      alert('이메일 인증 요청 중 오류가 발생했습니다.');
+
+      if (error.response) {
+        const { status, data } = error.response;
+
+        if (status === 409 && data?.message === "이미 가입된 이메일입니다.") {
+          alert("이미 가입된 이메일입니다.");
+          return;
+        }
+
+        alert(`인증 요청 실패: ${data?.message || '알 수 없는 오류'}`);
+      } else {
+        alert('이메일 인증 요청 중 네트워크 오류가 발생했습니다.');
+      }
     }
   };
 
   const handleCodeVerify = async () => {
     try {
-        // const response = await axios.post(`${API_BASE_URL}/api/auth/verify-code`, {
-        const response = await axios.post(`http://localhost:8080/api/auth/verify-code`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/verify-code`, {
+        // const response = await axios.post(`http://localhost:8080/api/auth/verify-code`, {
         email,
         code
       }, {
@@ -163,7 +173,8 @@ const Signup = () => {
 
   const handleSignup = async () => {
     try {
-        const response = await axios.post(`http://localhost:8080/api/auth/signup`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
+        // const response = await axios.post(`http://localhost:8080/api/auth/signup`, {
         name,
         email,
         password,

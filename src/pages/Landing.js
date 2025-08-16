@@ -205,6 +205,16 @@ const LandingPage = () => {
 
   const navigate = useNavigate();
 
+  const handleStart = () => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      navigate("/main");  // 로그인 되어있으면 바로 메인으로
+    } else {
+      navigate("/login"); // 아니면 로그인 페이지로
+    }
+  };
+
+
   return (
     <LandingWrapper>
       <HeroSection>
@@ -262,7 +272,7 @@ const LandingPage = () => {
           </StepCurve>
 
           <StepItem posX={12} posY={60}>
-            <StepIcon src={feat1} alt="실시간 욕설 감지" style={{ width: '150px', height: '105px' }}/>
+            <StepIcon src={feat1} alt="실시간 욕설 감지" style={{ width: '150px', height: '105px' }} />
             <StepText>실시간 욕설 감지<br />및 자동 음소거</StepText>
           </StepItem>
 
@@ -292,7 +302,7 @@ const LandingPage = () => {
           실시간 음성 필터링부터 법률 대응까지,<br />
           상담원을 위한 든든한 보호막을 지금 만나보세요.
         </CTAText>
-        <CTAButton onClick={() => navigate('/login')}>➔ 서비스 시작하기</CTAButton>
+        <CTAButton onClick={handleStart}>➔ 서비스 시작하기</CTAButton>
       </CTASection>
     </LandingWrapper>
   );

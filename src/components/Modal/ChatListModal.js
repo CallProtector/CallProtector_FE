@@ -133,6 +133,8 @@ function formatDate(s) {
 }
 
 const ChatListModal = ({ onClose, onSelect }) => {
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
   const [rows, setRows] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [cursorId, setCursorId] = useState(null);
@@ -143,8 +145,8 @@ const ChatListModal = ({ onClose, onSelect }) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeMsg, setAnalyzeMsg] = useState('');
 
-  const ABUSE_SESSIONS_API = 'http://localhost:8080/api/call-sessions/abusive';
-  const ANALYZE_API_BASE = 'http://localhost:8080/api/chatbot/analyze';
+  const ABUSE_SESSIONS_API = `${API_BASE_URL}/api/call-sessions/abusive`;
+  const ANALYZE_API_BASE = `${API_BASE_URL}/api/chatbot/analyze`;
   const DEFAULT_PAGE_SIZE = 5;
 
   const fetchPage = async ({ cursor, size, replace = false } = {}) => {
@@ -200,7 +202,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
       setRows(prev => (replace ? sessions : [...prev, ...sessions]));
       setCursorId(next);
       setHasNext(nextFlag);
-      
+
       if (replace && sessions.length > 0 && selectedId == null) {
         setSelectedId(sessions[0].id);
       }
@@ -214,7 +216,6 @@ const ChatListModal = ({ onClose, onSelect }) => {
 
   useEffect(() => {
     fetchPage({ replace: true, size: DEFAULT_PAGE_SIZE });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedRow = useMemo(
@@ -278,12 +279,12 @@ const ChatListModal = ({ onClose, onSelect }) => {
         ended = true;
         try {
           const jsonStart = buffer.indexOf('{');
-          const jsonEnd   = buffer.lastIndexOf('}') + 1;
-          const jsonStr   = jsonStart >= 0 ? buffer.substring(jsonStart, jsonEnd) : '{}';
-          const data      = JSON.parse(jsonStr || '{}');
+          const jsonEnd = buffer.lastIndexOf('}') + 1;
+          const jsonStr = jsonStart >= 0 ? buffer.substring(jsonStart, jsonEnd) : '{}';
+          const data = JSON.parse(jsonStr || '{}');
 
           if (!data.errorCode && (data.message === 'SUCCESS' || !data.message)) {
-             setAnalyzeMsg('');     // 로그는 남기지 않음(원하면 유지)
+            setAnalyzeMsg('');     // 로그는 남기지 않음(원하면 유지)
             setAnalyzing(false);
             es.close();
             onSelect && onSelect(selectedRow);
@@ -361,7 +362,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
           {loading && <EmptyState>불러오는 중…</EmptyState>}
           {!loading && rows.length === 0 && !err && (
             <EmptyState>
-              표시할 상담이 없습니다.<br/>
+              표시할 상담이 없습니다.<br />
               {connectionMsg || '요청은 정상 처리되었습니다.'}
             </EmptyState>
           )}

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import axios from "axios";
 import styled, { keyframes } from 'styled-components';
 import { FiSend, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { FaPlus } from 'react-icons/fa';
 import ChatListModal from '../components/Modal/ChatListModal';
 import botAvatar from '../assets/images/bot-avatar.png';
+import { useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
   display: flex;
@@ -179,13 +181,6 @@ const ProfileImage = styled.img`
   margin-right: 10px;
 `;
 
-// const ChatBubble = styled.div`
-//   background-color: ${({ fromUser }) => (fromUser ? '#DCF8C6' : '#FFF')};
-//   padding: 10px 14px;
-//   border-radius: 12px;
-//   max-width: 60%;
-// `;
-
 
 const ChatBubble = styled.div`
   max-width: 70%;
@@ -271,6 +266,9 @@ const LoadingDots = styled.span`
 
 
 const Chatbot = () => {
+  const navigate = useNavigate();
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
 
@@ -369,7 +367,7 @@ const Chatbot = () => {
   // 일반 세션 목록 로드
   const loadGeneralSessions = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/chat-sessions/list', {
+      const res = await fetch(`${API_BASE_URL}/api/chat-sessions/list`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       });
@@ -402,7 +400,7 @@ const Chatbot = () => {
   const loadConsultSessions = async () => {
     try {
       const res = await fetch(
-        'http://localhost:8080/api/call-chat-sessions/list',
+        `${API_BASE_URL}/api/call-chat-sessions/list`,
         {
           method: 'GET',
           headers: {
@@ -445,10 +443,9 @@ const Chatbot = () => {
       let url;
 
       if (which === 'general') {
-        url = `http://localhost:8080/api/chat-log/session/${sessionId}`;
+        url = `${API_BASE_URL}/api/chat-log/session/${sessionId}`;
       } else {
-        // 상담별 조회
-        url = `http://localhost:8080/api/call-chat-log/session/${sessionId}`;
+        url = `${API_BASE_URL}/api/call-chat-log/session/${sessionId}`;
       }
 
       const res = await fetch(url, {
@@ -457,8 +454,12 @@ const Chatbot = () => {
       });
       const data = await res.json();
 
-      if (res.ok && data.isSuccess && Array.isArray(data.result)) {
-        const logs = [...data.result].sort(
+      const logs = (which === 'consult')
+        ? data.result?.logs || []
+        : data.result || [];
+
+      if (res.ok && data.isSuccess && Array.isArray(logs)) {
+        const sortedLogs = [...logs].sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
 
@@ -480,6 +481,17 @@ const Chatbot = () => {
         const setMap =
           which === 'general' ? setGeneralChatMap : setConsultChatMap;
         setMap((prev) => ({ ...prev, [sessionId]: msgList }));
+
+        // 👉 상담별이면 consultChatSessions에 callSessionId를 병합
+        if (which === 'consult' && data.result?.callSessionId) {
+          setConsultChatSessions((prev) =>
+            prev.map((s) =>
+              String(s.sessionId) === String(sessionId)
+                ? { ...s, callSessionId: data.result.callSessionId }
+                : s
+            )
+          );
+        }
       } else {
         console.warn('대화 로그 조회 실패:', data?.message);
       }
@@ -492,7 +504,7 @@ const Chatbot = () => {
   const ensureSessionId = async () => {
     if (selected && /^\d+$/.test(String(selected))) return selected;
 
-    const res = await fetch('http://localhost:8080/api/chat-sessions', {
+    const res = await fetch(`${API_BASE_URL}/api/chat-sessions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -642,8 +654,8 @@ const Chatbot = () => {
       const encoded = encodeURIComponent(text);
       const url =
         activeTab === '일반'
-          ? `http://localhost:8080/api/chat/stream?sessionId=${sessionId}&question=${encoded}&token=${token}`
-          : `http://localhost:8080/api/call-chat/stream?callChatSessionId=${sessionId}&question=${encoded}&token=${token}`;
+          ? `${API_BASE_URL}/api/chat/stream?sessionId=${sessionId}&question=${encoded}&token=${token}`
+          : `${API_BASE_URL}/api/call-chat/stream?callChatSessionId=${sessionId}&question=${encoded}&token=${token}`;
 
       openSseAndStream({ url, sessionId });
     } catch (err) {
@@ -656,7 +668,7 @@ const Chatbot = () => {
     try {
       const raw = localStorage.getItem('accessToken');
       const token = raw ? raw.replace(/^"+|"+$/g, '') : '';
-      const url = `http://localhost:8080/api/call-chat-sessions/by-call-session?callSessionId=${encodeURIComponent(
+      const url = `${API_BASE_URL}/api/call-chat-sessions/by-call-session?callSessionId=${encodeURIComponent(
         callSessionId
       )}`;
       const res = await fetch(url, {
@@ -743,14 +755,9 @@ const Chatbot = () => {
         {showModal && (
           <ChatListModal
             onClose={() => setShowModal(false)}
-            onSelect={async (row) => {
-              // row.id === callSessionId
-              const s = await ensureCallChatSessionFromCall(row.id);
+            onSelect={async () => {
+              await refreshConsultAndFocusLatest();
               setShowModal(false);
-              if (!s) return;
-              setActiveTab('상담별');
-              setSelected(s.sessionId);
-              await loadChatLogs(s.sessionId, 'consult');
             }}
           />
         )}
@@ -948,6 +955,17 @@ const Chatbot = () => {
                 <CallLogButton
                   style={{
                     visibility: activeTab === '상담별' ? 'visible' : 'hidden',
+                  }}
+                  onClick={() => {
+                    if (activeTab !== '상담별') return;
+
+                    const callSessionId = selectedSessionMeta?.callSessionId;
+
+                    if (callSessionId) {
+                      navigate(`/sessions/${callSessionId}`);
+                    } else {
+                      alert("통화 세션 ID가 없습니다. 먼저 대화 로그를 불러와주세요.");
+                    }
                   }}
                 >
                   통화 내용 보기
