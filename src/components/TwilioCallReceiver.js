@@ -26,8 +26,8 @@ const TwilioCallReceiver = () => {
     if (!jwtToken) return;
 
     const initTwilio = async () => {
-      // const res = await axios.get(`${API_BASE_URL}/api/token`, {
-      const res = await axios.get(`http://localhost:8080/api/token`, {
+      const res = await axios.get(`${API_BASE_URL}/api/token`, {
+        // const res = await axios.get(`http://localhost:8080/api/token`, {
         headers: { Authorization: `Bearer ${jwtToken}` },
       });
 
