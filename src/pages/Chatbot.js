@@ -294,6 +294,18 @@ const Chatbot = () => {
       : consultChatSessions.find((s) => String(s.sessionId) === String(selected));
 
   // 날짜 유틸
+
+  // === 시간 파서 유틸 ===
+  const parseServerTime = (ts) => {
+    if (!ts) return null;
+    // 이미 Z나 +09:00 같은 오프셋이 있으면 그대로 처리
+    if (/[zZ]$/.test(ts) || /[+-]\d{2}:\d{2}$/.test(ts)) {
+      return new Date(ts);
+    }
+    // naive datetime → UTC로 간주
+    return new Date(`${ts}Z`);
+  };
+
   const isToday = (d) => {
     const now = new Date();
     return (
@@ -320,7 +332,7 @@ const Chatbot = () => {
   const groupedGeneral = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
     for (const s of generalChatSessions) {
-      const dt = new Date(s.startTime);
+      const dt = parseServerTime(s.startTime);
       if (isToday(dt)) g.today.push(s);
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
@@ -333,7 +345,7 @@ const Chatbot = () => {
   const groupedConsult = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
     for (const s of consultChatSessions) {
-      const dt = new Date(s.createdAt);
+      const dt = parseServerTime(s.createdAt);
       if (isToday(dt)) g.today.push(s);
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
@@ -373,7 +385,12 @@ const Chatbot = () => {
             new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
         );
 
-        setGeneralChatSessions(list);
+        setGeneralChatSessions(
+          list.map(s => ({
+            ...s,
+            startTime: parseServerTime(s.startTime)?.toISOString()
+          }))
+        );
 
         setGeneralChatMap((prev) => {
           const next = { ...prev };
@@ -410,7 +427,12 @@ const Chatbot = () => {
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
 
-        setConsultChatSessions(list);
+        setConsultChatSessions(
+          list.map(s => ({
+            ...s,
+            createdAt: parseServerTime(s.createdAt)?.toISOString()
+          }))
+        );
 
         setConsultChatMap((prev) => {
           const next = { ...prev };
@@ -1002,9 +1024,9 @@ const Chatbot = () => {
               </ChatTitle>
               <ChatDate>
                 {activeTab === '일반' && selectedSessionMeta?.startTime
-                  ? new Date(selectedSessionMeta.startTime).toLocaleString()
+                  ? parseServerTime(selectedSessionMeta.startTime)?.toLocaleString()
                   : activeTab === '상담별' && selectedSessionMeta?.createdAt
-                    ? new Date(selectedSessionMeta.createdAt).toLocaleString()
+                    ? parseServerTime(selectedSessionMeta.createdAt)?.toLocaleString()
                     : ' '}
               </ChatDate>
             </ChatHeader>
