@@ -6,8 +6,11 @@ import React, {
   useState,
 } from "react";
 import { playBeep, primeBeep } from "../utils/beep";
+import { duckTwilioOutput } from "../utils/duckTwilioOutput";
 
 const WebSocketContext = createContext();
+const BEEP_LEAD_MS = 150; // 비프 시작 전에 덕킹이 먼저 걸리도록 딜레이
+const DUCK_TAIL_MS = 100; // 비프 끝난 뒤 살짝 더 덕킹 유지(꼬리 방지)
 
 export const useWebSocket = () => useContext(WebSocketContext);
 
@@ -98,7 +101,18 @@ export const WebSocketProvider = ({ children }) => {
           // ✅ 서버 비프 트리거 수신 → 즉시 로컬 비프 재생
           case "beep": {
             const ms = Number(data.durationMs) || 1000;
+            // 1) 통화 오디오 잠깐 음소거 (상담원 귀에만)
+            duckTwilioOutput(ms);
+            // 2) 비프 재생 (Web Audio – 별 경로)
             playBeep(ms);
+
+            // 1) 덕킹을 먼저 적용 (비동기 복원, 비프보다 길게 +테일)
+            duckTwilioOutput(ms + DUCK_TAIL_MS /* , { mode: "mute" } */);
+            // 2) 짧은 리드 타임 뒤에 비프 재생 → 비프 초반 겹침 제거
+            setTimeout(() => {
+              playBeep(ms);
+            }, BEEP_LEAD_MS);
+
             break;
           }
 
