@@ -328,7 +328,7 @@ const Chatbot = () => {
     return g;
   }, [generalChatSessions]);
 
- 
+
   // 상담별 세션 그룹핑
   const groupedConsult = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
@@ -568,9 +568,9 @@ const Chatbot = () => {
 
   // === 공용 SSE 전송 ===
   const openSseAndStream = ({ url, sessionId }) => {
+    const which = activeTab === '일반' ? 'general' : 'consult';
     const eventSource = new EventSource(url);
     let buffer = '';
-    let firstChunkReceived = false;
 
     const replaceLoadingWith = (text) => {
       setCurrentChatMap((prev) => {
@@ -585,7 +585,20 @@ const Chatbot = () => {
       });
     };
 
-    eventSource.onmessage = (event) => {
+    // ⭐ NEW: 제목 이벤트 즉시 반영
+    eventSource.addEventListener('title', (ev) => {
+      try {
+        const payload = JSON.parse(ev.data); // { sessionId, title }
+        const sid = payload?.sessionId ?? sessionId;
+        const title = payload?.title;
+        applySessionTitle(which, sid, title);
+      } catch (e) {
+        // 무시 (타이틀 파싱 실패해도 메시지 스트림은 계속)
+      }
+    });
+
+    // 기존 메시지 스트림 처리(마지막 JSON만 반영)
+    eventSource.addEventListener('message', (event) => {
       const chunk = event.data;
 
       if (chunk === '[END]') {
@@ -596,6 +609,8 @@ const Chatbot = () => {
           const parsed = JSON.parse(buffer.substring(jsonStart, jsonEnd).trim());
           if (parsed.answer) {
             replaceLoadingWith(formatBotMessage(parsed.answer, parsed.sourcePages));
+          } else {
+            replaceLoadingWith('[⚠️ 응답 형식 없음]');
           }
         } catch (e) {
           replaceLoadingWith('[⚠️ 응답 파싱 실패]');
@@ -607,9 +622,9 @@ const Chatbot = () => {
       if (chunk.startsWith('[JSON]')) {
         buffer = chunk.replace('[JSON]', '').trim();
       }
-    };
+    });
 
-    eventSource.onerror = (e) => {
+    eventSource.onerror = () => {
       replaceLoadingWith('[⛔ 연결 실패]');
       eventSource.close();
     };
@@ -716,11 +731,31 @@ const Chatbot = () => {
 
   const chatBodyRef = React.useRef(null);
 
+
   React.useEffect(() => {
     if (chatBodyRef.current) {
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const applySessionTitle = (which, sessionId, title) => {
+    if (!sessionId || !title) return;
+
+    if (which === 'general') {
+      setGeneralChatSessions(prev =>
+        prev.map(s =>
+          String(s.sessionId) === String(sessionId) ? { ...s, title } : s
+        )
+      );
+    } else {
+      setConsultChatSessions(prev =>
+        prev.map(s =>
+          String(s.sessionId) === String(sessionId) ? { ...s, title } : s
+        )
+      );
+    }
+  };
+
 
   return (
     <Container>
