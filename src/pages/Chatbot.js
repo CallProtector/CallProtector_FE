@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from "axios";
 import styled, { keyframes } from 'styled-components';
 import { FiSend, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { FaPlus } from 'react-icons/fa';
 import ChatListModal from '../components/Modal/ChatListModal';
 import botAvatar from '../assets/images/bot-avatar.png';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Container = styled.div`
   display: flex;
@@ -267,7 +266,10 @@ const LoadingDots = styled.span`
 
 const Chatbot = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
+  const tabFromUrl = searchParams.get("tab");
+  const sessionIdFromUrl = searchParams.get("sessionId");
   const API_BASE_URL = process.env.REACT_APP_API_URL;
   const [activeTab, setActiveTab] = useState('일반');
   const [showModal, setShowModal] = useState(false);
@@ -326,15 +328,7 @@ const Chatbot = () => {
     return g;
   }, [generalChatSessions]);
 
-  // const ChatBubble = ({ fromUser, children }) => (
-  //   <ChatBubbleWrapper>
-  //     {!fromUser && (
-  //       <ProfileImage src="/images/bot-avatar.png" alt="Bot Avatar" />
-  //     )}
-  //     <Bubble fromUser={fromUser}>{children}</Bubble>
-  //   </ChatBubbleWrapper>
-  // );
-
+ 
   // 상담별 세션 그룹핑
   const groupedConsult = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
