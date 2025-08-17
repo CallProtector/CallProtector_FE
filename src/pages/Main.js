@@ -89,7 +89,7 @@ const styles = {
     color: "#e6007e",
   },
   lottieBox: {
-    flex: "0 0 900px", // 고정 폭
+    flex: "1 1 50%", // 고정 폭
     maxWidth: "900px", // 최대 폭 제한
     display: "flex",
     alignItems: "center",
