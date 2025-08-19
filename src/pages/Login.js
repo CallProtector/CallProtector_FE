@@ -249,7 +249,7 @@ const Login = () => {
                 <input type="checkbox" style={{ marginRight: "8px" }} />
                 자동 로그인
               </CheckboxLabel>
-              <RightText href="/recover">아이디 | 비밀번호 찾기</RightText>
+              <RightText>아이디 | 비밀번호 찾기</RightText>
             </CheckboxWrapper>
             <Button>로그인</Button>
             <BottomText>
