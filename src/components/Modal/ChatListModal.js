@@ -300,11 +300,11 @@ const ChatListModal = ({ onClose, onSelect }) => {
             es.close();
             onSelect && onSelect(selectedRow);
             onClose && onClose();
-            if (!notifiedRef.current) {
-              notifiedRef.current = true;
-              // UI 전환이 먼저 반영된 뒤 얼럿 표시
-              setTimeout(() => { alert('분석이 완료되었습니다.'); }, 0);
-            }
+            // if (!notifiedRef.current) {
+            //   notifiedRef.current = true;
+            //   // UI 전환이 먼저 반영된 뒤 얼럿 표시
+            //   setTimeout(() => { alert('분석이 완료되었습니다.'); }, 0);
+            // }
             return;
           }
           setErr(data.message || '분석 결과 처리 중 오류');
@@ -390,7 +390,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
             onClick={startAnalyze}
             title={!selectedRow ? '항목을 선택하세요' : '이 상담 분석 시작'}
           >
-            {analyzing ? '분석중…' : '상담 시작하기'}
+            {analyzing ? '분석 중' : '상담 시작하기'}
           </StartButton>
         </Footer>
       </ModalContainer>
