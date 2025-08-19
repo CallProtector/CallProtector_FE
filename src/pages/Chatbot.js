@@ -295,6 +295,7 @@ const Chatbot = () => {
 
   // 날짜 유틸
 
+  
   // === 시간 파서 유틸 ===
   const parseServerTime = (ts) => {
     if (!ts) return null;
@@ -739,6 +740,18 @@ const Chatbot = () => {
     }
   };
 
+  // 유틸 함수: **...** 를 <strong>...</strong>으로 변환
+  const renderWithBold = (text) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={idx}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={idx}>{part}</span>;
+    });
+  };
+
+
   const refreshConsultAndFocusLatest = async () => {
     const list = await loadConsultSessions();
     if (list && list.length) {
@@ -1037,8 +1050,9 @@ const Chatbot = () => {
                     <ProfileImage src={botAvatar} alt="Bot Avatar" />
                   )}
                   <ChatBubble fromUser={msg.fromUser} loading={msg.loading}>
-                    {msg.loading ? <LoadingDots /> : msg.text}
+                    {msg.loading ? <LoadingDots /> : renderWithBold(msg.text)}
                   </ChatBubble>
+
                 </ChatBubbleContainer>
               ))}
             </ChatBody>
