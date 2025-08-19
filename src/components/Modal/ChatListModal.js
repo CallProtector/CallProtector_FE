@@ -245,6 +245,17 @@ const ChatListModal = ({ onClose, onSelect }) => {
 
   const notifiedRef = useRef(false);
 
+  const DotTicker = ({ running = true, interval = 450 }) => {
+    const [idx, setIdx] = React.useState(0);
+    const frames = React.useMemo(() => ["", ".", "..", "..."], []);
+    React.useEffect(() => {
+      if (!running) return;
+      const t = setInterval(() => setIdx(i => (i + 1) % frames.length), interval);
+      return () => clearInterval(t);
+    }, [running, interval]);
+    return <span>{frames[idx]}</span>;
+  };
+
   const startAnalyze = () => {
     if (!selectedRow) return;
 
@@ -256,7 +267,7 @@ const ChatListModal = ({ onClose, onSelect }) => {
     }
 
     setAnalyzing(true);
-    setAnalyzeMsg('분석을 시작합니다…');
+    setAnalyzeMsg('분석을 시작합니다');
     setErr('');
 
     const url = `${ANALYZE_API_BASE}/${encodeURIComponent(selectedRow.id)}?token=${encodeURIComponent(token)}`;
@@ -324,8 +335,12 @@ const ChatListModal = ({ onClose, onSelect }) => {
         </ModalHeader>
 
         {connectionMsg && <StatusMsg>{connectionMsg}</StatusMsg>}
-        {analyzeMsg && <StatusMsg>{analyzeMsg}</StatusMsg>}
-        {err && <ErrorMsg>{err}</ErrorMsg>}
+        {analyzeMsg && (
+             <StatusMsg>
+                 {analyzeMsg}
+                 <DotTicker running={analyzing} />
+               </StatusMsg>
+           )}        {err && <ErrorMsg>{err}</ErrorMsg>}
 
         <TableWrapper>
           <Table>
