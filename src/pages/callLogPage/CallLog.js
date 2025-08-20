@@ -309,7 +309,29 @@ const CallLog = () => {
     <div className="total">
       <div className="box1">
         <div className="left-info">
-          <h2 className="call-title">{callNumber}</h2>
+          <h2 className="call-title">
+            {callNumber}
+            {!isDetailMode && (
+              <span
+                className={`call-status ${
+                  isCallEnded ? "ended" : "in-progress"
+                }`}
+              >
+                {isCallEnded ? (
+                  "통화 종료"
+                ) : (
+                  <span className="wavy">
+                    {"통화중...".split("").map((ch, i) => (
+                      <span key={i} style={{ animationDelay: `${i * 0.1}s` }}>
+                        {ch}
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </span>
+            )}
+          </h2>
+
           <div className="call-details">
             <span className="call-date">{callDate}</span>
           </div>
@@ -333,15 +355,6 @@ const CallLog = () => {
               }}
             ></div>
           </div>
-          {abuseCount > 0 && (
-            <div className="abuse-warning-toggle">
-              <button onClick={() => setShowAbuseOnly((prev) => !prev)}>
-                {showAbuseOnly
-                  ? "⚠️ 전체 보기"
-                  : `⚠️ 부적절 발언 보기 (${abuseCount}/3)`}
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -349,19 +362,45 @@ const CallLog = () => {
         <div className="box2">
           <div className="section-header">
             <h3 className="section-title">음성 기록</h3>
-            <div className="ai-note">
-              <AiOutlineInfoCircle
-                size={20}
-                style={{
-                  marginRight: "10px",
-                  position: "relative",
-                  top: "2px",
-                }}
-              />
-              AI 생성 콘텐츠는 오류가 있을 수 있습니다.
+            <div className="header-right-actions">
+              <div className="ai-note">
+                <AiOutlineInfoCircle
+                  size={20}
+                  style={{
+                    marginRight: "10px",
+                    position: "relative",
+                    top: "2px",
+                  }}
+                />
+                AI 생성 콘텐츠는 오류가 있을 수 있습니다.
+              </div>
+              {abuseCount > 0 && (
+                <div className="abuse-warning-toggle">
+                  <button
+                    onClick={() => setShowAbuseOnly((prev) => !prev)}
+                    className={`toggle-button ${showAbuseOnly ? "active" : ""}`}
+                  >
+                    {showAbuseOnly ? (
+                      <>
+                        <span role="img" aria-label="all">
+                          📜
+                        </span>{" "}
+                        전체 보기
+                      </>
+                    ) : (
+                      <>
+                        <span role="img" aria-label="warning">
+                          ⚠️
+                        </span>{" "}
+                        부적절 발언 보기
+                        <span className="abuse-count">({abuseCount}/3)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-
           <div className="conversation">
             {logsForRender.map((log, idx) => {
               // 부적절 발언만 보기가 활성화되었을 때, 부적절 발언이 아닌 로그는 건너뛰기
@@ -381,7 +420,10 @@ const CallLog = () => {
                   {/* 💡 isAbuse가 true일 때 warning-highlight 클래스 적용 */}
                   <p className={textClass}>
                     {log.script}
-                    {log.isAbuse}
+                    {/* 버튼 켰을 때만 type 배지 표시 */}
+                    {showAbuseOnly &&
+                      log.isAbuse &&
+                      ` 🚫 ${log.abuseType || "부적절한 발언"}`}
                   </p>
                 </div>
               );
