@@ -19,15 +19,49 @@ const API_TO_UI_CATEGORY = {
   threat: "협박",
 };
 
-// YYYY-MM-DD HH:mm:ss
+// YYYY-MM-DD HH:mm:ss (KST 고정)
 const formatDate = (value) => {
   if (!value) return "-";
+
+  // 공통: KST 파츠 → 문자열 조립
+  const toKstYmdHms = (dateObj) => {
+    const parts = new Intl.DateTimeFormat("ko-KR", {
+      timeZone: "Asia/Seoul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).formatToParts(dateObj);
+    const get = (t) => parts.find((p) => p.type === t)?.value ?? "";
+    return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get(
+      "minute"
+    )}:${get("second")}`;
+  };
+
+  // 1) 타임존 없는 ISO → UTC로 간주해 파싱
+  if (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T/.test(value) &&
+    !/[Z+-]\d{2}:?\d{2}$/.test(value)
+  ) {
+    const m = value.match(
+      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?$/
+    );
+    if (m) {
+      const [, y, M, d, h, min, s, frac] = m;
+      const ms = frac ? Math.floor(Number(`0.${frac}`) * 1000) : 0;
+      const dUTC = new Date(Date.UTC(+y, +M - 1, +d, +h, +min, +s, ms));
+      return toKstYmdHms(dUTC); // ← formatToParts로 조립
+    }
+  }
+
+  // 2) 그 외(Z/오프셋 포함, Date/epoch 등)
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-    d.getHours()
-  )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return toKstYmdHms(d); // ← 동일 로직 사용
 };
 
 // ── 하이라이트 유틸 ─────────────────────────────────────────────
@@ -54,7 +88,6 @@ const HighlightText = ({ text = "", highlight }) => {
 // 유니코드 안전 15자 자르기
 const charSlice = (s = "", n = 15) => [...String(s)].slice(0, n).join("");
 
-// 📌 표에는 서버 스니펫만 15자로 잘라서 "그대로" 보여줌 (키워드 앞에 안 붙임)
 const buildSnippetForDisplay = (snippet = "") =>
   charSlice(snippet || "", 15) || "-";
 

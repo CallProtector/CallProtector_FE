@@ -5,6 +5,31 @@ import "./CallLog.css";
 import { useWebSocket } from "../../contexts/WebSocketContext";
 import axios from "axios";
 
+function shiftToKST(str) {
+  if (!str) return "정보 없음";
+
+  // "8.20 (수) 11:53" → 숫자만 뽑기
+  const match = str.match(/(\d+)\.(\d+).*?(\d+):(\d+)/);
+  if (!match) return str;
+
+  const [, month, day, hour, minute] = match.map(Number);
+  const year = new Date().getFullYear();
+
+  // ① 들어온 값은 UTC 기준
+  const dateUTC = new Date(Date.UTC(year, month - 1, day, hour, minute));
+
+  // ② 한국 시간으로 변환
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "numeric",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(dateUTC);
+}
+
 const CallLog = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -223,9 +248,22 @@ const CallLog = () => {
   const callNumber = isDetailMode
     ? detailSessionInfo?.callSessionCode
     : sessionInfo?.sessionCode || "세션 없음";
-  const callDate = isDetailMode
+
+  {
+    /*const callDate = isDetailMode
     ? detailSessionInfo?.createdAt
     : sessionInfo?.createdAt || "정보 없음";
+
+    const rawCreatedAt = isDetailMode
+  ? detailSessionInfo?.createdAt
+  : sessionInfo?.createdAt;*/
+  }
+
+  const rawCreatedAt = isDetailMode
+    ? detailSessionInfo?.createdAt
+    : sessionInfo?.createdAt;
+
+  const callDate = rawCreatedAt ? shiftToKST(rawCreatedAt) : "정보 없음";
   const abuseCount = isDetailMode ? detailTotalAbuseCnt : totalAbuseCnt;
   const logsForRender = isDetailMode ? detailCallLogs : callLogs;
 
