@@ -60,6 +60,8 @@ export const WebSocketProvider = ({ children }) => {
       console.error("Twilio disconnect error:", e);
       twilioDeviceRef.current?.disconnectAll?.();
     }
+    setIsCallEnded(true);
+
     // 안전망: Twilio 이벤트가 안 오면 일정 시간 뒤 WS 강제 종료
     setTimeout(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -90,6 +92,7 @@ export const WebSocketProvider = ({ children }) => {
 
     ws.onopen = () => {
       console.log("🌐 WebSocket 연결됨");
+      setIsCallEnded(false);
     };
 
     ws.onmessage = (event) => {
