@@ -390,7 +390,7 @@
 
 .abuse-warning-toggle {
   display: flex;
-  margin-top: 30px;
+  margin-top: 15px;
 }
 
 .toggle-button {
@@ -445,7 +445,7 @@
     transform: translateY(0);
   }
   25% {
-    transform: translateY(-5px); /* 원하는 높이로 조정 */
+    transform: translateY(-5px);
   }
   50% {
     transform: translateY(0);
@@ -453,7 +453,7 @@
 }
 
 .call-status.in-progress {
-  color: #2e7d32; /* 초록색 */
+  color: #2e7d32;
 }
 
 .wavy {
@@ -465,10 +465,9 @@
 .wavy span {
   animation: wave 1.5s ease-in-out infinite;
   animation-delay: calc(0.1s * var(--i));
-  margin: 0 1px; /* 글자 사이의 간격 조정 */
+  margin: 0 1px;
 }
 
-/* 통화 종료 상태 텍스트 색상 */
 .call-status.ended {
-  color: #888; /* 회색 */
+  color: #888;
 }

@@ -121,9 +121,38 @@ export const WebSocketProvider = ({ children }) => {
 
           case "sessionInfo":
             console.log("✅ [sessionInfo] 수신됨:", data);
+
+            // 백엔드에서 받은 createdAt 문자열을 Date 객체로 변환
+            const createdAtDate = new Date(data.createdAt);
+
+            // 한국 시간(KST)으로 포맷팅
+            const options = {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false, // 24시간 형식
+              timeZone: "Asia/Seoul", // 한국 시간대로 명시
+            };
+
+            const formattedDate = createdAtDate.toLocaleDateString(
+              "ko-KR",
+              options
+            );
+            const formattedTime = createdAtDate.toLocaleTimeString(
+              "ko-KR",
+              options
+            );
+
+            // 최종적으로 표시될 문자열 생성 (예: "2025-08-20 07:18")
+            const displayTime = `${formattedDate
+              .replace(/\./g, "-")
+              .trim()} ${formattedTime}`;
+
             setSessionInfo({
               sessionCode: data.sessionCode,
-              createdAt: data.createdAt,
+              createdAt: displayTime,
               totalAbuseCnt: data.totalAbuseCnt,
             });
             setTotalAbuseCnt(data.totalAbuseCnt);

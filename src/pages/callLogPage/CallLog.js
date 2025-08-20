@@ -393,7 +393,9 @@ const CallLog = () => {
                           ⚠️
                         </span>{" "}
                         부적절 발언 보기
-                        <span className="abuse-count">({abuseCount}/3)</span>
+                        <span className="abuse-count">
+                          ({abuseCount}/{abuseCount > 3 ? abuseCount : 3})
+                        </span>
                       </>
                     )}
                   </button>
