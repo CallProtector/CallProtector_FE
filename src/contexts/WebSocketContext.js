@@ -202,7 +202,7 @@ export const WebSocketProvider = ({ children }) => {
         wsRef,
         disconnectWebSocket,
         isCallEnded,
-        endCallAndDisconnect, // 통합 종료 함수 노출
+        endCallAndDisconnect, // 통합 종료
         registerTwilioRefs,
         resetCallState,
       }}

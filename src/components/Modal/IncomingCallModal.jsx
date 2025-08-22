@@ -90,8 +90,9 @@ const PolicyBox = styled.div`
       background-color: #5c24af;
     }
 
-    .highlight {
+    .pname {
       color: #5c24af;
+      font-weight: bold;
       margin-right: 2px;
     }
   }
@@ -160,6 +161,12 @@ const IncomingCallModal = ({ show, onAccept, onReject, connectionRef }) => {
   const [loading, setLoading] = useState(false);
   const jwtToken = localStorage.getItem("accessToken");
   const API_BASE_URL = process.env.REACT_APP_API_URL;
+  React.useEffect(() => {
+    if (show) {
+      setIsChecked(false);
+      setLoading(false);
+    }
+  }, [show]);
 
   const handleCheck = async (e) => {
     const checked = e.target.checked;
@@ -266,7 +273,7 @@ const IncomingCallModal = ({ show, onAccept, onReject, connectionRef }) => {
           <PolicyBox>
             <label>
               <span>
-                <span className="highlight">온음</span>의 상담원 보호 정책
+                <span className="pname">온음</span>의 상담원 보호 정책
               </span>
               <input
                 type="checkbox"
