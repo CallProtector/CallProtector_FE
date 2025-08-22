@@ -4,6 +4,20 @@ import IncomingCallModal from "./Modal/IncomingCallModal";
 import axios from "axios";
 import { useWebSocket } from "../contexts/WebSocketContext";
 
+function parseQueryParams(queryString) {
+  const params = {};
+  if (!queryString) return params;
+
+  queryString.split("&").forEach((pair) => {
+    const [key, value] = pair.split("=");
+    if (key && value) {
+      params[decodeURIComponent(key)] = decodeURIComponent(value);
+    }
+  });
+
+  return params;
+}
+
 const TwilioCallReceiver = () => {
   const [showModal, setShowModal] = useState(false);
   const deviceRef = useRef(null);
@@ -18,6 +32,7 @@ const TwilioCallReceiver = () => {
     disconnectWebSocket,
     registerTwilioRefs,
     isCallEnded,
+    wsRef,
   } = useWebSocket();
 
   useEffect(() => {
@@ -93,6 +108,28 @@ const TwilioCallReceiver = () => {
 
   const handleAccept = () => {
     if (connectionRef.current) {
+      const parsedParams = parseQueryParams(
+        connectionRef.current.parameters.Params
+      );
+      const initialCallSid = parsedParams.initialCallSid;
+
+      // 통화 수락과 동시에 WebSocket 메시지 전송
+      if (
+        sessionInfo &&
+        wsRef.current &&
+        wsRef.current.readyState === WebSocket.OPEN
+      ) {
+        const payload = JSON.stringify({
+          event: "callAccepted",
+          callSid: initialCallSid,
+        });
+        wsRef.current.send(payload);
+        console.log("📨 WS 전송 (callAccepted). callSid:", initialCallSid);
+      } else {
+        console.warn(
+          "⚠️ sessionInfo가 없거나 WebSocket 연결이 준비되지 않아 WS 메시지를 보내지 못했습니다."
+        );
+      }
       connectionRef.current.accept();
       console.log("✅ 수신 수락됨");
       setShowModal(false);
