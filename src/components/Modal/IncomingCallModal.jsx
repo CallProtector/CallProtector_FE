@@ -138,6 +138,7 @@ const ButtonConfirm = styled.button.withConfig({
   cursor: ${({ isDisabled }) => (isDisabled ? "default" : "pointer")};
   pointer-events: ${({ isDisabled }) => (isDisabled ? "none" : "auto")};
 `;
+
 function parseQueryParams(queryString) {
   const params = {};
   if (!queryString) return params;
@@ -154,7 +155,7 @@ function parseQueryParams(queryString) {
 
 const IncomingCallModal = ({ show, onAccept, onReject, connectionRef }) => {
   // 💡 props로 받던 setSessionInfo 대신 전역 훅 사용
-  const { setSessionInfo } = useWebSocket();
+  const { setSessionInfo, sessionInfo, resetCallState, wsRef } = useWebSocket();
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const jwtToken = localStorage.getItem("accessToken");
@@ -205,6 +206,41 @@ const IncomingCallModal = ({ show, onAccept, onReject, connectionRef }) => {
           callSessionId: result.callSessionId,
         });
         console.log("✅ sessionInfo 수신 완료:", result);
+
+        // ✅ 새 세션 진입이므로 '진행중'으로 보정 + 이전 로그/카운트 초기화
+        resetCallState();
+
+        // ✅ 멀티 모달 트리거: WebSocket으로 callAccepted 전송
+        const ws = wsRef?.current;
+        const payload = JSON.stringify({
+          event: "callAccepted",
+          callSid: initialCallSid, // PATCH에 쓴 값과 동일하게
+        });
+
+        console.log("🆔 callSid 확인:", initialCallSid);
+        console.log("📦 WS 전송 payload:", payload);
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(payload);
+          console.log("📨 WS 전송(callAccepted 즉시 완료)");
+        } else if (ws) {
+          // 아직 OPEN 전이면 open 시 1회 전송
+          const sendOnOpen = () => {
+            try {
+              ws.send(payload);
+              console.log(
+                "📨 WS 전송(callAccepted 지연 완료) callSid:",
+                initialCallSid
+              );
+            } finally {
+              ws.removeEventListener?.("open", sendOnOpen);
+            }
+          };
+          ws.addEventListener?.("open", sendOnOpen, { once: true });
+          console.log("⏳ WS OPEN 대기, open되면 callAccepted 전송 예약");
+        } else {
+          console.warn("⚠️ wsRef가 없음 — Provider 마운트/연결을 확인하세요.");
+        }
       } catch (err) {
         console.error("❌ sessionInfo 수신 실패:", err);
       } finally {

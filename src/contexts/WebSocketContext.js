@@ -26,6 +26,13 @@ export const WebSocketProvider = ({ children }) => {
   const twilioDeviceRef = useRef(null);
   const twilioConnectionRef = useRef(null);
 
+  // 🔧 통화 시작(또는 새 세션 진입) 시 전역 상태 리셋
+  const resetCallState = () => {
+    setIsCallEnded(false);
+    setCallLogs([]);
+    setTotalAbuseCnt(0);
+  };
+
   // Twilio 객체 등록 (Receiver에서 호출)
   const registerTwilioRefs = (device, connection) => {
     twilioDeviceRef.current = device; // null을 넘기면 해제
@@ -138,7 +145,7 @@ export const WebSocketProvider = ({ children }) => {
               const lastLogIndex = prevLogs.length - 1;
               const newLog = { track, script, isFinal, isAbuse, abuseType };
 
-              // 💡 마지막 로그가 현재 트랙의 중간 결과인 경우 덮어쓰기
+              // 마지막 로그가 현재 트랙의 중간 결과인 경우 덮어쓰기
               if (
                 lastLogIndex >= 0 &&
                 prevLogs[lastLogIndex].track === track &&
@@ -197,6 +204,7 @@ export const WebSocketProvider = ({ children }) => {
         isCallEnded,
         endCallAndDisconnect, // 통합 종료 함수 노출
         registerTwilioRefs,
+        resetCallState,
       }}
     >
       {children}
