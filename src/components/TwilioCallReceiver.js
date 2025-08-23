@@ -1,3 +1,181 @@
+// import React, { useEffect, useRef, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import IncomingCallModal from "./Modal/IncomingCallModal";
+// import axios from "axios";
+// import { useWebSocket } from "../contexts/WebSocketContext";
+
+// function parseQueryParams(queryString) {
+//   const params = {};
+//   if (!queryString) return params;
+
+//   queryString.split("&").forEach((pair) => {
+//     const [key, value] = pair.split("=");
+//     if (key && value) {
+//       params[decodeURIComponent(key)] = decodeURIComponent(value);
+//     }
+//   });
+
+//   return params;
+// }
+
+// const TwilioCallReceiver = () => {
+//   const [showModal, setShowModal] = useState(false);
+//   const deviceRef = useRef(null);
+//   const connectionRef = useRef(null);
+//   const navigate = useNavigate();
+//   const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+//   // 💡 WebSocketContext의 sessionInfo와 setSessionInfo 사용
+//   const {
+//     sessionInfo,
+//     setSessionInfo,
+//     disconnectWebSocket,
+//     registerTwilioRefs,
+//     isCallEnded,
+//     wsRef,
+//     connectWebSocket,
+//     lastPatchedCallSidRef,
+//   } = useWebSocket();
+
+//   useEffect(() => {
+//     const jwtToken = localStorage.getItem("accessToken");
+//     console.log("🔑 jwtToken:", jwtToken);
+//     if (!jwtToken) return;
+
+//     const initTwilio = async () => {
+//       const res = await axios.get(`${API_BASE_URL}/api/token`, {
+//         headers: { Authorization: `Bearer ${jwtToken}` },
+//       });
+
+//       const twilioAccessToken = res.data.result.twilioAccessToken;
+//       const device = new window.Twilio.Device(twilioAccessToken, {
+//         debug: true,
+//       });
+//       deviceRef.current = device;
+
+//       device.on("ready", () => {
+//         console.log("✅ Device ready");
+//         window.Twilio.Device.audio?.speakerDevices.set("default");
+//       });
+
+//       device.on("incoming", (conn) => {
+//         console.log("📞 수신:", conn.parameters.From);
+//         const agentLegCallSid = conn.parameters.CallSid; // 상담원 레그
+//         const q = parseQueryParams(conn.parameters.Params);
+//         const initialCallSid = q.initialCallSid; // 원본 인바운드
+//         console.log("🧩 agentLegCallSid(상담원 레그):", agentLegCallSid);
+//         console.log("🆔 initialCallSid(원본 인바운드):", initialCallSid);
+
+//         connectionRef.current = conn;
+
+//         // 컨텍스트에 Twilio 객체 등록
+//         registerTwilioRefs(deviceRef.current, connectionRef.current);
+
+//         // connection 레벨 이벤트로 종료 감지
+//         conn.on("accept", () => console.log("✅ 연결 accept"));
+//         conn.on("disconnect", () => {
+//           console.log("🔚 connection.disconnect");
+//           disconnectWebSocket(); // Twilio 종료 이벤트를 받은 뒤 WS 닫기
+//         });
+//         conn.on("cancel", () => {
+//           console.log("❌ 수신 취소");
+//           disconnectWebSocket();
+//         });
+//         setShowModal(true);
+//       });
+
+//       device.on("disconnect", () => {
+//         console.log("❌ Twilio 통화 종료");
+//         setShowModal(false);
+//       });
+
+//       device.on("cancel", () => {
+//         console.log("❌ 수신 통화 취소됨 (고객이 끊음)");
+//         setShowModal(false);
+//         disconnectWebSocket();
+//       });
+
+//       device.on("error", (err) => {
+//         console.error("🚨 Twilio 오류:", err);
+//         setShowModal(false);
+//       });
+//     };
+
+//     initTwilio();
+
+//     return () => {
+//       console.log("🧹 TwilioCallReceiver 언마운트: 리소스 정리");
+//       if (deviceRef.current) {
+//         deviceRef.current.destroy(); // Twilio 디바이스 파괴
+//       }
+//     };
+//   }, []);
+
+//   const handleAccept = () => {
+//     connectWebSocket();
+
+//     if (connectionRef.current) {
+//       const parsedParams = parseQueryParams(
+//         connectionRef.current.parameters.Params
+//       );
+//       const initialCallSid = parsedParams.initialCallSid;
+//       console.log("handleAccept->", initialCallSid);
+
+//       // 통화 수락과 동시에 WebSocket 메시지 전송
+//       if (
+//         sessionInfo &&
+//         wsRef.current &&
+//         wsRef.current.readyState === WebSocket.OPEN
+//       ) {
+//         const payload = JSON.stringify({
+//           event: "callAccepted",
+//           callSid: initialCallSid,
+//         });
+//         wsRef.current.send(payload);
+//         console.log("📨 WS 전송 (callAccepted). callSid:", initialCallSid);
+//       } else {
+//         console.warn(
+//           "⚠️ sessionInfo가 없거나 WebSocket 연결이 준비되지 않아 WS 메시지를 보내지 못했습니다."
+//         );
+//       }
+//       connectionRef.current.accept();
+//       console.log("✅ 수신 수락됨");
+//       setShowModal(false);
+
+//       // 💡 setSessionInfo가 아닌, 전역 상태 sessionInfo를 사용
+//       if (sessionInfo) {
+//         navigate("/callLog", {
+//           state: {
+//             callAccepted: true,
+//             ...sessionInfo,
+//           },
+//         });
+//       } else {
+//         console.warn("⚠️ sessionInfo 없음!");
+//       }
+//     }
+//   };
+
+//   const handleReject = () => {
+//     if (connectionRef.current) {
+//       connectionRef.current.reject();
+//       console.log("❌ 수신 거절됨");
+//       setShowModal(false);
+//     }
+//   };
+
+//   return (
+//     <IncomingCallModal
+//       show={showModal}
+//       onAccept={handleAccept}
+//       onReject={handleReject}
+//       connectionRef={connectionRef}
+//     />
+//   );
+// };
+
+// export default TwilioCallReceiver;
+
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import IncomingCallModal from "./Modal/IncomingCallModal";
@@ -25,7 +203,6 @@ const TwilioCallReceiver = () => {
   const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-  // 💡 WebSocketContext의 sessionInfo와 setSessionInfo 사용
   const {
     sessionInfo,
     setSessionInfo,
@@ -33,7 +210,12 @@ const TwilioCallReceiver = () => {
     registerTwilioRefs,
     isCallEnded,
     wsRef,
+    connectWebSocket,
+    // ✅ 추가
+    lastPatchedCallSidRef,
   } = useWebSocket();
+
+  const sentRef = useRef(false); // WS 중복 전송 방지
 
   useEffect(() => {
     const jwtToken = localStorage.getItem("accessToken");
@@ -58,8 +240,13 @@ const TwilioCallReceiver = () => {
 
       device.on("incoming", (conn) => {
         console.log("📞 수신:", conn.parameters.From);
-        console.log("🆔 originalInboundCallSid:", conn.parameters.CallSid);
-        console.log("☎️ callerNumber:", conn.parameters.From);
+
+        // 라벨 명확화
+        const agentLegCallSid = conn.parameters.CallSid; // 상담원 레그
+        const q = parseQueryParams(conn.parameters.Params);
+        const initialCallSid = q.initialCallSid; // 원본 인바운드
+        console.log("🧩 agentLegCallSid(상담원 레그):", agentLegCallSid);
+        console.log("🆔 initialCallSid(원본 인바운드):", initialCallSid);
 
         connectionRef.current = conn;
 
@@ -107,44 +294,72 @@ const TwilioCallReceiver = () => {
   }, []);
 
   const handleAccept = () => {
-    if (connectionRef.current) {
-      const parsedParams = parseQueryParams(
-        connectionRef.current.parameters.Params
-      );
-      const initialCallSid = parsedParams.initialCallSid;
+    // WS 연결 보장 (OPEN이면 내부에서 return)
+    connectWebSocket();
 
-      // 통화 수락과 동시에 WebSocket 메시지 전송
-      if (
-        sessionInfo &&
-        wsRef.current &&
-        wsRef.current.readyState === WebSocket.OPEN
-      ) {
-        const payload = JSON.stringify({
-          event: "callAccepted",
-          callSid: initialCallSid,
-        });
-        wsRef.current.send(payload);
-        console.log("📨 WS 전송 (callAccepted). callSid:", initialCallSid);
-      } else {
-        console.warn(
-          "⚠️ sessionInfo가 없거나 WebSocket 연결이 준비되지 않아 WS 메시지를 보내지 못했습니다."
-        );
-      }
-      connectionRef.current.accept();
-      console.log("✅ 수신 수락됨");
-      setShowModal(false);
+    if (!connectionRef.current) return;
 
-      // 💡 setSessionInfo가 아닌, 전역 상태 sessionInfo를 사용
-      if (sessionInfo) {
-        navigate("/callLog", {
-          state: {
-            callAccepted: true,
-            ...sessionInfo,
-          },
-        });
-      } else {
-        console.warn("⚠️ sessionInfo 없음!");
+    // ✅ PATCH에 넣었던 값을 그대로 사용 (동일성 보장)
+    const initialCallSid = lastPatchedCallSidRef.current;
+    console.log("handleAccept -> using LOCKED callSid:", initialCallSid);
+
+    // 1) 먼저 Twilio 수락
+    connectionRef.current.accept();
+    console.log("✅ 수신 수락됨");
+    setShowModal(false);
+
+    // 2) WS OPEN 보장 + accept 이후 150ms 지연 후 전송
+    const doSend = () => {
+      if (sentRef.current) return;
+      const ws = wsRef.current;
+      if (!ws) {
+        console.warn("⚠️ wsRef 없음");
+        return;
       }
+      const payload = JSON.stringify({
+        event: "callAccepted",
+        callSid: initialCallSid,
+      });
+
+      console.log("🪣서버로 전송(TwilioCallReceiver): ", payload);
+
+      const reallySend = () => {
+        try {
+          ws.send(payload);
+          sentRef.current = true;
+          console.log(
+            "📨 WS 전송(callAccepted, after accept). callSid:",
+            initialCallSid
+          );
+        } catch (e) {
+          console.error("❌ WS send 실패:", e);
+        }
+      };
+
+      if (ws.readyState === WebSocket.OPEN) {
+        setTimeout(reallySend, 150);
+      } else if (ws.readyState === WebSocket.CONNECTING) {
+        ws.addEventListener("open", () => setTimeout(reallySend, 150), {
+          once: true,
+        });
+        console.log("⏳ WS OPEN 대기 → callAccepted 예약");
+      } else {
+        console.warn("⚠️ WS CLOSED/CLOSING 상태");
+      }
+    };
+
+    doSend();
+
+    // 내비게이션은 기존대로
+    if (sessionInfo) {
+      navigate("/callLog", {
+        state: {
+          callAccepted: true,
+          ...sessionInfo,
+        },
+      });
+    } else {
+      console.warn("⚠️ sessionInfo 없음!");
     }
   };
 

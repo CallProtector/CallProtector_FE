@@ -156,7 +156,8 @@ function parseQueryParams(queryString) {
 
 const IncomingCallModal = ({ show, onAccept, onReject, connectionRef }) => {
   // 💡 props로 받던 setSessionInfo 대신 전역 훅 사용
-  const { setSessionInfo, sessionInfo, resetCallState, wsRef } = useWebSocket();
+  const { setSessionInfo, sessionInfo, resetCallState, setLastPatchedCallSid } =
+    useWebSocket();
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const jwtToken = localStorage.getItem("accessToken");
@@ -183,6 +184,9 @@ const IncomingCallModal = ({ show, onAccept, onReject, connectionRef }) => {
           connectionRef.current.parameters.Params
         );
         const initialCallSid = parsedParams.initialCallSid;
+
+        // ✅ PATCH와 WS에서 동일하게 쓰기 위해 값 확정(LOCK)
+        setLastPatchedCallSid(initialCallSid);
 
         console.log("📡 PATCH 요청 보내는 중...");
         console.log("🔑 token:", jwtToken);
