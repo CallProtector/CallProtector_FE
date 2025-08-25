@@ -222,8 +222,8 @@ import { playBeep, primeBeep } from "../utils/beep";
 import { duckTwilioOutput } from "../utils/duckTwilioOutput";
 
 const WebSocketContext = createContext();
-const BEEP_LEAD_MS = 150; // 비프 시작 전에 덕킹이 먼저 걸리도록 딜레이
-const DUCK_TAIL_MS = 100; // 비프 끝난 뒤 살짝 더 덕킹 유지(꼬리 방지)
+const BEEP_LEAD_MS = 200; // 비프 시작 전에 덕킹이 먼저 걸리도록 딜레이
+const DUCK_TAIL_MS = 150; // 비프 끝난 뒤 살짝 더 덕킹 유지(꼬리 방지)
 
 export const useWebSocket = () => useContext(WebSocketContext);
 
