@@ -182,6 +182,8 @@ import IncomingCallModal from "./Modal/IncomingCallModal";
 import axios from "axios";
 import { useWebSocket } from "../contexts/WebSocketContext";
 
+import { Device } from "@twilio/voice-sdk";
+
 function parseQueryParams(queryString) {
   const params = {};
   if (!queryString) return params;
@@ -228,14 +230,15 @@ const TwilioCallReceiver = () => {
       });
 
       const twilioAccessToken = res.data.result.twilioAccessToken;
-      const device = new window.Twilio.Device(twilioAccessToken, {
-        debug: true,
+
+      const device = new Device(twilioAccessToken, {
+        logLevel: 1,
       });
       deviceRef.current = device;
 
-      device.on("ready", () => {
+      device.on("registered", () => {
         console.log("✅ Device ready");
-        window.Twilio.Device.audio?.speakerDevices.set("default");
+        device.audio.speakerDevices.set("default");
       });
 
       device.on("incoming", (conn) => {
@@ -281,6 +284,8 @@ const TwilioCallReceiver = () => {
         console.error("🚨 Twilio 오류:", err);
         setShowModal(false);
       });
+
+      device.register();
     };
 
     initTwilio();
