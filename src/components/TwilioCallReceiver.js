@@ -324,6 +324,18 @@ const TwilioCallReceiver = () => {
       document.body.appendChild(audioEl);
     }
 
+    // 1-2) Twilio 기본 audio element 제거
+    setTimeout(() => {
+      const twilioAudios = document.querySelectorAll("audio");
+      twilioAudios.forEach((el) => {
+        if (el.srcObject instanceof MediaStream && !el.dataset.twilioAudio) {
+          el.muted = true;
+          el.srcObject = null;
+          el.remove();
+        }
+      });
+    }, 200);
+
     // 2) WS OPEN 보장 + accept 이후 150ms 지연 후 전송
     const doSend = () => {
       if (sentRef.current) return;
