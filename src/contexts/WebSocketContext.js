@@ -296,18 +296,9 @@ export const WebSocketProvider = ({ children }) => {
           case "beep": {
             const ms = Number(data.durationMs) || 1000;
 
-            // Twilio 기본 audio element 제거
-            const twilioAudios = document.querySelectorAll("audio");
-            twilioAudios.forEach((el) => {
-              if (el.srcObject instanceof MediaStream && !el.dataset.twilioAudio) {
-                el.muted = true;
-                el.srcObject = null;
-                el.remove();
-                console.log("beep 이벤트 시 기본 Twilio audio 제거");
-              }
-            });
+            const conn = twilioConnectionRef.current;
+            duckTwilioOutput(conn, ms + DUCK_TAIL_MS);
 
-            duckTwilioOutput(ms + DUCK_TAIL_MS);
             setTimeout(() => {
               playBeep(ms);
             }, BEEP_LEAD_MS);

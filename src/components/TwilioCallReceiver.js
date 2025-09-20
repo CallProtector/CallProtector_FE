@@ -313,46 +313,6 @@ const TwilioCallReceiver = () => {
     console.log("✅ 수신 수락됨");
     setShowModal(false);
 
-    // 1-1) 상담원 전용 audio element 추가
-    const stream = connectionRef.current.mediaStream;
-    if (stream) {
-      const cloned = stream.clone();
-      const audioEl = document.createElement("audio");
-      audioEl.autoplay = true;
-      audioEl.srcObject = cloned;
-      audioEl.setAttribute("data-twilio-audio", "inbound");
-      document.body.appendChild(audioEl);
-    }
-
-    // 1-2) Twilio 기본 audio element 제거
-    setTimeout(() => {
-      const twilioAudios = document.querySelectorAll("audio");
-      twilioAudios.forEach((el) => {
-        if (el.srcObject instanceof MediaStream && !el.dataset.twilioAudio) {
-          el.muted = true;
-          el.srcObject = null;
-          el.remove();
-        }
-      });
-    }, 200);
-
-    // 1-3) MutationObserver로 이후 생성되는 Twilio audio도 제거
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (
-            node.tagName === "AUDIO" &&
-            !node.dataset.twilioAudio
-          ) {
-            node.muted = true;
-            node.srcObject = null;
-            node.remove();
-          }
-        });
-      });
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-
     // 2) WS OPEN 보장 + accept 이후 150ms 지연 후 전송
     const doSend = () => {
       if (sentRef.current) return;
