@@ -12,15 +12,18 @@ export function duckTwilioOutput(durationMs = 1000) {
     let gn = duckNodes.get(el);
     if (!gn) {
       const src = ctx.createMediaStreamSource(el.srcObject);
+
       gn = ctx.createGain();
+      gn.gain.value = 1;
+
       src.connect(gn).connect(ctx.destination);
       duckNodes.set(el, gn);
     }
 
     const now = ctx.currentTime;
-    // 즉시 mute
+
+    gn.gain.cancelScheduledValues(now);
     gn.gain.setValueAtTime(0, now);
-    // duration 지나면 복원
     gn.gain.setValueAtTime(1, now + durationMs / 1000);
   });
 }
