@@ -336,6 +336,23 @@ const TwilioCallReceiver = () => {
       });
     }, 200);
 
+    // 1-3) MutationObserver로 이후 생성되는 Twilio audio도 제거
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (
+            node.tagName === "AUDIO" &&
+            !node.dataset.twilioAudio
+          ) {
+            node.muted = true;
+            node.srcObject = null;
+            node.remove();
+          }
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
     // 2) WS OPEN 보장 + accept 이후 150ms 지연 후 전송
     const doSend = () => {
       if (sentRef.current) return;
