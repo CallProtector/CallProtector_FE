@@ -5,7 +5,7 @@ export function duckTwilioOutput(durationMs = 1000) {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
 
   const els = Array.from(document.querySelectorAll("audio")).filter(
-    (el) => el.srcObject && el.srcObject instanceof MediaStream
+    (el) => el.dataset.twilioAudio === "inbound"
   );
 
   els.forEach((el) => {

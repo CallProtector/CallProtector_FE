@@ -313,6 +313,17 @@ const TwilioCallReceiver = () => {
     console.log("✅ 수신 수락됨");
     setShowModal(false);
 
+    // 1-1) 상담원 전용 audio element 추가
+    const stream = connectionRef.current.mediaStream;
+    if (stream) {
+      const cloned = stream.clone();
+      const audioEl = document.createElement("audio");
+      audioEl.autoplay = true;
+      audioEl.srcObject = cloned;
+      audioEl.setAttribute("data-twilio-audio", "inbound");
+      document.body.appendChild(audioEl);
+    }
+
     // 2) WS OPEN 보장 + accept 이후 150ms 지연 후 전송
     const doSend = () => {
       if (sentRef.current) return;
