@@ -9,7 +9,6 @@ import { playBeep, primeBeep } from "../utils/beep";
 
 const WebSocketContext = createContext();
 const BEEP_LEAD_MS = 200; // 비프 시작 전에 덕킹이 먼저 걸리도록 딜레이
-const DUCK_TAIL_MS = 150; // 비프 끝난 뒤 살짝 더 덕킹 유지(꼬리 방지)
 
 export const useWebSocket = () => useContext(WebSocketContext);
 
@@ -79,27 +78,8 @@ export const WebSocketProvider = ({ children }) => {
         console.log("📩 WebSocket 메시지 수신:", data);
 
         switch (data.type) {
-          case "mute": {
-            const device = twilioDeviceRef.current;
-
-            if (device?.audio?.speakerDevices) {
-              device.audio.speakerDevices.set([]);
-              console.log("🔇 고객 오디오 mute");
-            }
-            break;
-          }
-
           case "beep": {
             const ms = Number(data.durationMs) || 1000;
-            const device = twilioDeviceRef.current;
-
-            if (device?.audio?.speakerDevices) {
-              setTimeout(() => {
-                device.audio.speakerDevices.set(["default"]);
-                console.log("🔊 고객 오디오 복원");
-              }, ms + DUCK_TAIL_MS);
-            }
-
             setTimeout(() => {
               playBeep(ms);
             }, BEEP_LEAD_MS);
