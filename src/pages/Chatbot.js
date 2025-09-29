@@ -295,7 +295,7 @@ const Chatbot = () => {
 
   // 날짜 유틸
 
-  
+
   // === 시간 파서 유틸 ===
   const parseServerTime = (ts) => {
     if (!ts) return null;
@@ -381,11 +381,7 @@ const Chatbot = () => {
       const data = await res.json();
 
       if (res.ok && data.isSuccess && Array.isArray(data.result)) {
-        const list = [...data.result].sort(
-          (a, b) =>
-            new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-        );
-
+        const list = data.result || [];
         setGeneralChatSessions(
           list.map(s => ({
             ...s,
@@ -423,10 +419,7 @@ const Chatbot = () => {
       const data = await res.json();
 
       if (res.ok && data.isSuccess && Array.isArray(data.result)) {
-        const list = [...data.result].sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        const list = data.result || [];
 
         setConsultChatSessions(
           list.map(s => ({
@@ -589,6 +582,7 @@ const Chatbot = () => {
     setSelected(null);
   };
 
+
   // === 공용 SSE 전송 ===
   const openSseAndStream = ({ url, sessionId }) => {
     const which = activeTab === '일반' ? 'general' : 'consult';
@@ -608,7 +602,7 @@ const Chatbot = () => {
       });
     };
 
-    // ⭐ NEW: 제목 이벤트 즉시 반영
+    // 제목 이벤트 즉시 반영
     eventSource.addEventListener('title', (ev) => {
       try {
         const payload = JSON.parse(ev.data); // { sessionId, title }
@@ -616,11 +610,10 @@ const Chatbot = () => {
         const title = payload?.title;
         applySessionTitle(which, sid, title);
       } catch (e) {
-        // 무시 (타이틀 파싱 실패해도 메시지 스트림은 계속)
       }
     });
 
-    // 기존 메시지 스트림 처리(마지막 JSON만 반영)
+    // 메시지 스트림 처리
     eventSource.addEventListener('message', (event) => {
       const chunk = event.data;
 
