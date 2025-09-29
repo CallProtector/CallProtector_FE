@@ -59,6 +59,14 @@ const Navbar = () => {
 
   if (isAuthPage) return null; 
 
+   const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userName");
+
+    // 로그인 페이지로 이동
+    navigate("/login");
+  };
   return (
     <NavbarWrapper>
       <Logo onClick={() => navigate('/main')} src={logoImg} alt="온음 로고" />
@@ -67,7 +75,7 @@ const Navbar = () => {
         <MenuItem onClick={() => navigate('/callList')}>상담내역</MenuItem>
         <MenuItem onClick={() => navigate('/chatbot')}>AI 챗봇</MenuItem>
       </Menu>
-      <LogoutButton>로그아웃</LogoutButton>
+      <LogoutButton onClick={handleLogout}>로그아웃</LogoutButton>
     </NavbarWrapper>
   );
 };
