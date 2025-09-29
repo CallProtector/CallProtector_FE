@@ -674,7 +674,25 @@ const Chatbot = () => {
 
     setInputText('');
     setTempSessionId(null);
-
+    const now = new Date().toISOString();
+    if (activeTab === '일반') {
+      setGeneralChatSessions((prev) =>
+        prev.map((s) =>
+          String(s.sessionId) === String(sessionId)
+            ? { ...s, lastUserQuestionAt: now }
+            : s
+        )
+      );
+    } else {
+      setConsultChatSessions((prev) =>
+        prev.map((s) =>
+          String(s.sessionId) === String(sessionId)
+            ? { ...s, lastUserQuestionAt: now }
+            : s
+        )
+      );
+    }
+    
     try {
       const encoded = encodeURIComponent(text);
       const url =
@@ -705,9 +723,8 @@ const Chatbot = () => {
         console.warn('상담별 세션 확보 실패:', data?.message);
         return null;
       }
-      const session = data.result; // { sessionId, title?, createdAt? }
+      const session = data.result;
 
-      // 목록에 없으면 추가
       setConsultChatSessions((prev) => {
         const exists = prev.some(
           (s) => String(s.sessionId) === String(session.sessionId)
@@ -722,7 +739,7 @@ const Chatbot = () => {
           ...prev,
         ];
       });
-      // 메시지 맵 슬롯 보장
+
       setConsultChatMap((prev) =>
         prev[session.sessionId] ? prev : { ...prev, [session.sessionId]: [] }
       );
@@ -733,7 +750,6 @@ const Chatbot = () => {
     }
   };
 
-  // 유틸 함수: **...** 를 <strong>...</strong>으로 변환
   const renderWithBold = (text) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, idx) => {
@@ -748,7 +764,7 @@ const Chatbot = () => {
   const refreshConsultAndFocusLatest = async () => {
     const list = await loadConsultSessions();
     if (list && list.length) {
-      const latest = list[0]; // createdAt DESC 정렬 기준
+      const latest = list[0];
       setActiveTab('상담별');
       setSelected(latest.sessionId);
       await loadChatLogs(latest.sessionId, 'consult');
