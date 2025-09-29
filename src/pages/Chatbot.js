@@ -338,6 +338,12 @@ const Chatbot = () => {
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
     }
+    const sortFn = (a, b) =>
+      new Date(b.lastUserQuestionAt || b.startTime) -
+      new Date(a.lastUserQuestionAt || a.startTime);
+    g.today.sort(sortFn);
+    g.week.sort(sortFn);
+    g.rest.sort(sortFn);
     return g;
   }, [generalChatSessions]);
 
@@ -351,6 +357,12 @@ const Chatbot = () => {
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
     }
+    const sortFn = (a, b) =>
+      new Date(b.lastUserQuestionAt || b.createdAt) -
+      new Date(a.lastUserQuestionAt || a.createdAt);
+    g.today.sort(sortFn);
+    g.week.sort(sortFn);
+    g.rest.sort(sortFn);
     return g;
   }, [consultChatSessions]);
 
@@ -692,7 +704,7 @@ const Chatbot = () => {
         )
       );
     }
-    
+
     try {
       const encoded = encodeURIComponent(text);
       const url =
