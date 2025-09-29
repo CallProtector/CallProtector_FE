@@ -64,6 +64,8 @@ const Navbar = () => {
     localStorage.removeItem("userId");
     localStorage.removeItem("userName");
 
+    alert("로그아웃이 완료되었습니다. 로그인 페이지로 이동합니다.");
+
     // 로그인 페이지로 이동
     navigate("/login");
   };
