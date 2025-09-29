@@ -688,21 +688,31 @@ const Chatbot = () => {
     setTempSessionId(null);
     const now = new Date().toISOString();
     if (activeTab === '일반') {
-      setGeneralChatSessions((prev) =>
-        prev.map((s) =>
+      setGeneralChatSessions((prev) => {
+        const updated = prev.map((s) =>
           String(s.sessionId) === String(sessionId)
             ? { ...s, lastUserQuestionAt: now }
             : s
-        )
-      );
+        );
+        return [...updated].sort(
+          (a, b) =>
+            new Date(b.lastUserQuestionAt || b.startTime) -
+            new Date(a.lastUserQuestionAt || a.startTime)
+        );
+      });
     } else {
-      setConsultChatSessions((prev) =>
-        prev.map((s) =>
+      setConsultChatSessions((prev) => {
+        const updated = prev.map((s) =>
           String(s.sessionId) === String(sessionId)
             ? { ...s, lastUserQuestionAt: now }
             : s
-        )
-      );
+        );
+        return [...updated].sort(
+          (a, b) =>
+            new Date(b.lastUserQuestionAt || b.createdAt) -
+            new Date(a.lastUserQuestionAt || a.createdAt)
+        );
+      });
     }
 
     try {
