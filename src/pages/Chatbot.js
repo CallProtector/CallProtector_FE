@@ -333,7 +333,7 @@ const Chatbot = () => {
   const groupedGeneral = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
     for (const s of generalChatSessions) {
-      const dt = parseServerTime(s.startTime);
+      const dt = parseServerTime(s.lastUserQuestionAt || s.startTime);
       if (isToday(dt)) g.today.push(s);
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
@@ -346,7 +346,7 @@ const Chatbot = () => {
   const groupedConsult = React.useMemo(() => {
     const g = { today: [], week: [], rest: [] };
     for (const s of consultChatSessions) {
-      const dt = parseServerTime(s.createdAt);
+      const dt = parseServerTime(s.lastUserQuestionAt || s.createdAt);
       if (isToday(dt)) g.today.push(s);
       else if (isWithin7Days(dt)) g.week.push(s);
       else g.rest.push(s);
@@ -385,7 +385,7 @@ const Chatbot = () => {
         setGeneralChatSessions(
           list.map(s => ({
             ...s,
-            startTime: parseServerTime(s.startTime)?.toISOString()
+            lastUserQuestionAt: parseServerTime(s.lastUserQuestionAt)?.toISOString()
           }))
         );
 
@@ -424,7 +424,7 @@ const Chatbot = () => {
         setConsultChatSessions(
           list.map(s => ({
             ...s,
-            createdAt: parseServerTime(s.createdAt)?.toISOString()
+            lastUserQuestionAt: parseServerTime(s.lastUserQuestionAt)?.toISOString()
           }))
         );
 
