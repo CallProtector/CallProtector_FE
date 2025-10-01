@@ -80,9 +80,24 @@ export const WebSocketProvider = ({ children }) => {
         switch (data.type) {
           case "beep": {
             const ms = Number(data.durationMs) || 1000;
+
             setTimeout(() => {
+              // 1) 비프음 재생
               playBeep(ms);
+
+              // 2) 고객 오디오 mute 처리
+              if (window.__customerGainNode) {
+                const now = window.__customerGainNode.context.currentTime;
+                const gn = window.__customerGainNode.gain;
+                gn.cancelScheduledValues(now);
+                gn.setValueAtTime(0.0, now); // 완전 mute
+                gn.setValueAtTime(1.0, now + ms / 1000); // ms 후 원복
+                console.log("🔇 고객 오디오 mute 적용 (ms:", ms, ")");
+              } else {
+                console.warn("⚠️ 고객 GainNode 없음 → mute 실패");
+              }
             }, BEEP_LEAD_MS);
+
             break;
           }
           case "sessionInfo":

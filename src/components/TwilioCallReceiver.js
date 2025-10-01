@@ -79,7 +79,23 @@ const TwilioCallReceiver = () => {
         registerTwilioRefs(deviceRef.current, connectionRef.current);
 
         // connection 레벨 이벤트로 종료 감지
-        conn.on("accept", () => console.log("✅ 연결 accept"));
+        // 수락 이벤트에서 MediaStream → AudioContext 체인 구성
+        conn.on("accept", () => {
+          console.log("✅ 연결 accept");
+
+          const stream = conn.mediaStream;
+          if (stream) {
+            const ctx = new AudioContext();
+            const src = ctx.createMediaStreamSource(stream);
+            const gainNode = ctx.createGain();
+            gainNode.gain.value = 1.0;
+            src.connect(gainNode).connect(ctx.destination);
+
+            // 전역 보관해서 WebSocketContext에서도 접근 가능
+            window.__customerGainNode = gainNode;
+            console.log("🎧 고객 오디오 GainNode 초기화 완료");
+          }
+        });
         conn.on("disconnect", () => {
           console.log("🔚 connection.disconnect");
           disconnectWebSocket(); // Twilio 종료 이벤트를 받은 뒤 WS 닫기
