@@ -78,22 +78,36 @@ const TwilioCallReceiver = () => {
         // 컨텍스트에 Twilio 객체 등록
         registerTwilioRefs(deviceRef.current, connectionRef.current);
 
-        // connection 레벨 이벤트로 종료 감지
-        // 수락 이벤트에서 MediaStream → AudioContext 체인 구성
+        // Twilio 기본 audio mute 처리
+        const autoAudios = document.querySelectorAll("audio");
+        autoAudios.forEach((el) => {
+          if (!el.dataset.twilioManaged) {
+            el.muted = true;
+            console.log("🔇 Twilio 기본 audio element mute 적용");
+          }
+        });
+
+        // Twilio accept 시점에 Custom AudioContext 체인 구성
         conn.on("accept", () => {
           console.log("✅ 연결 accept");
+          try {
+            const stream = conn.getRemoteStream ? conn.getRemoteStream() : conn.mediaStream;
+            if (stream) {
+              const ctx = new AudioContext();
+              const src = ctx.createMediaStreamSource(stream);
+              const gainNode = ctx.createGain();
+              gainNode.gain.value = 1.0; // 기본 볼륨
 
-          const stream = conn.mediaStream;
-          if (stream) {
-            const ctx = new AudioContext();
-            const src = ctx.createMediaStreamSource(stream);
-            const gainNode = ctx.createGain();
-            gainNode.gain.value = 1.0;
-            src.connect(gainNode).connect(ctx.destination);
+              src.connect(gainNode).connect(ctx.destination);
 
-            // 전역 보관해서 WebSocketContext에서도 접근 가능
-            window.__customerGainNode = gainNode;
-            console.log("🎧 고객 오디오 GainNode 초기화 완료");
+              // 전역 보관 → beep 이벤트에서 mute/unmute 제어
+              window.__customerGainNode = gainNode;
+              console.log("🎧 고객 오디오 GainNode 초기화 완료");
+            } else {
+              console.error("❌ conn.on(accept): MediaStream 없음");
+            }
+          } catch (e) {
+            console.error("❌ conn.on(accept): GainNode 초기화 실패", e);
           }
         });
         conn.on("disconnect", () => {
