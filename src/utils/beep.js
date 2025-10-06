@@ -41,24 +41,34 @@ export async function playBeep(durationMs = 1000) {
   const bufferSize = ctx.sampleRate * (durationMs / 1000);
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.4;
   const noise = ctx.createBufferSource();
   noise.buffer = buffer;
 
-  // 필터 (고역 강조, 저역 감쇠)
-  const filter = ctx.createBiquadFilter();
-  filter.type = "highpass";
-  filter.frequency.value = 800; // 800Hz 이하 감쇠
+  // 노이즈 필터
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = "bandpass";
+  noiseFilter.frequency.value = 1600;
+  noiseFilter.Q.value = 0.8;
+
+  // 전체 톤 필터 (soft bandpass)
+  const mainFilter = ctx.createBiquadFilter();
+  mainFilter.type = "bandpass";
+  mainFilter.frequency.value = 1300;
+  mainFilter.Q.value = 0.7;
 
   // 게인 조절
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.25, ctx.currentTime); // 볼륨
+  const gain1 = ctx.createGain();
+  gain1.gain.setValueAtTime(0.35, ctx.currentTime);
+  const gain2 = ctx.createGain();
+  gain2.gain.setValueAtTime(0.15, ctx.currentTime);
 
   // 연결: [osc1 + osc2 + noise] → filter → gain → destination
-  osc1.connect(filter);
-  osc2.connect(filter);
-  noise.connect(filter);
-  filter.connect(gain).connect(ctx.destination);
+  osc1.connect(mainFilter);
+  osc2.connect(mainFilter);
+  noise.connect(noiseFilter).connect(mainFilter);
+  mainFilter.connect(gain1).connect(ctx.destination);
+  osc2.connect(gain2).connect(ctx.destination);
 
   // 시작
   osc1.start();
@@ -71,7 +81,9 @@ export async function playBeep(durationMs = 1000) {
   [osc1, osc2, noise].forEach((n) => {
     try { n.stop(); n.disconnect(); } catch {}
   });
-  try { filter.disconnect(); gain.disconnect(); } catch {}
+  [noiseFilter, mainFilter, gain1, gain2].forEach((n) => {
+    try { n.disconnect(); } catch {}
+  });
 
   beepLock = false;
 }
