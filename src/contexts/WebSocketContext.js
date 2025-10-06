@@ -80,28 +80,10 @@ export const WebSocketProvider = ({ children }) => {
         switch (data.type) {
           case "beep": {
             const ms = Number(data.durationMs) || 1000;
-            const audioEl = window.__twilioRemoteAudioElement; 
 
-            if (audioEl) {
-                // 1) 비프음 재생
-                playBeep(ms); 
-
-                // 2) 고객 오디오 mute 처리
-                setTimeout(() => {
-                    audioEl.muted = true;
-                    console.log("🔇 Twilio <audio> Element Mute 적용");
-                }, BEEP_LEAD_MS); 
-
-                // 3) 지정된 시간 후 unmute 처리
-                setTimeout(() => {
-                    audioEl.muted = false;
-                    console.log("🔊 Twilio <audio> Element Unmute 적용");
-                }, BEEP_LEAD_MS + ms);
-
-            } else {
-                console.warn("⚠️ Twilio Remote Audio Element 참조가 없어 mute 실패");
-            }
-            
+            setTimeout(() => {
+              playBeep(ms);
+            }, BEEP_LEAD_MS);
             break;
           }
           case "sessionInfo":

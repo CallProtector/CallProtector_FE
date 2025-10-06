@@ -32,7 +32,7 @@ export async function playBeep(durationMs = 1000) {
 
   osc.type = "sine";
   osc.frequency.value = 1000; // 1 kHz
-  gain.gain.setValueAtTime(0.15, ctx.currentTime); // 볼륨
+  gain.gain.setValueAtTime(0.2, ctx.currentTime); // 볼륨
 
   osc.connect(gain).connect(ctx.destination);
   osc.start();

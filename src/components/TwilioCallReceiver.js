@@ -78,48 +78,34 @@ const TwilioCallReceiver = () => {
         // 컨텍스트에 Twilio 객체 등록
         registerTwilioRefs(deviceRef.current, connectionRef.current);
 
-        conn.on("accept", () => {
-          console.log("✅ 연결 accept");
-          
-          setTimeout(() => {
-              const audioElements = document.querySelectorAll("audio");
-              if (audioElements.length > 0) {
-                  window.__twilioRemoteAudioElement = audioElements[audioElements.length - 1];
-                  console.log("🔊 Twilio Remote Audio Element 참조 저장됨:", window.__twilioRemoteAudioElement);
-              } else {
-                  console.error("❌ conn.on(accept): <audio> 엘리먼트를 찾을 수 없습니다.");
-              }
-          }, 100);
-        });
+        conn.on("accept", () => console.log("✅ 연결 accept"));
+
         conn.on("disconnect", () => {
           console.log("🔚 connection.disconnect");
-          delete window.__twilioRemoteAudioElement;
           disconnectWebSocket(); // Twilio 종료 이벤트를 받은 뒤 WS 닫기
         });
+
         conn.on("cancel", () => {
           console.log("❌ 수신 취소");
-          delete window.__twilioRemoteAudioElement;
           disconnectWebSocket();
         });
+        
         setShowModal(true);
       });
 
       device.on("disconnect", () => {
         console.log("❌ Twilio 통화 종료");
-        delete window.__twilioRemoteAudioElement;
         setShowModal(false);
       });
 
       device.on("cancel", () => {
         console.log("❌ 수신 통화 취소됨 (고객이 끊음)");
-        delete window.__twilioRemoteAudioElement;
         setShowModal(false);
         disconnectWebSocket();
       });
 
       device.on("error", (err) => {
         console.error("🚨 Twilio 오류:", err);
-        delete window.__twilioRemoteAudioElement;
         setShowModal(false);
       });
 
@@ -133,7 +119,6 @@ const TwilioCallReceiver = () => {
       if (deviceRef.current) {
         deviceRef.current.destroy(); // Twilio 디바이스 파괴
       }
-      delete window.__twilioRemoteAudioElement;
     };
   }, []);
 
